@@ -1,11 +1,9 @@
-pub mod ctf;
-pub mod commands;
-pub mod settings;
-pub mod db;
+use tobi::db;
+use tobi::commands;
 
 fn main() {
     db::init();
-    
+
     let args = std::env::args().collect::<Vec<String>>();
     commands::do_action(args);
 }

@@ -16,7 +16,7 @@ struct Meta {
 
 pub struct Ctf {
     file_path: String, 
-    pub metadata: Meta,
+    metadata: Meta,
     challenges: Vec<challenge::Challenge>,
 }
 
@@ -33,6 +33,21 @@ impl Ctf {
             },
             challenges: Vec::new(),
         }
+    }
+
+    pub fn add_challenge(&mut self, challenge: challenge::Challenge) {
+        self.challenges.push(challenge);
+    }
+
+    pub fn save_to_db(&self) {
+        let conn = crate::db::get_conn();
+        conn.execute(
+            "INSERT INTO ctf (path, name, url, creds, start, end) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![self.file_path, self.metadata.name, self.metadata.url, format!("{}:{}", self.metadata.creds.0, self.metadata.creds.1), self.metadata.start.to_rfc3339(), self.metadata.end.to_rfc3339()],
+        ).unwrap();
+
+        // save challenges
+        todo!();
     }
 }
 
@@ -60,4 +75,8 @@ pub fn quick_new(name: String) {
         "INSERT INTO ctf (path, name, url, creds, start, end) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
         params![ctf.file_path, ctf.metadata.name, ctf.metadata.url, format!("{}:{}", ctf.metadata.creds.0, ctf.metadata.creds.1), ctf.metadata.start.to_rfc3339(), ctf.metadata.end.to_rfc3339()],
     ).unwrap();
+}
+
+pub fn new_challenge(name: String, category: String) {
+    todo!();
 }
