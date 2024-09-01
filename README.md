@@ -27,3 +27,8 @@ Command map:
 - [ ] Challenge name parsing
 - [ ] Integrate ctf id into ctf struct
 - [ ] Make context command accept a single parameter and determine if it is a ctf or chall(return option if multiple challs with same name)
+- [ ] Implement flag/solve command
+- [ ] Backup db to some cloud service(will look into this later)
+- [ ] Implement settings menu(maybe create a TUI)
+- [ ] Create custom scripts for a workspace or for all workspaces
+- [ ] Remote pwn environment integration
