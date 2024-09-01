@@ -1,5 +1,7 @@
 use std::fs;
 use std::io::Write;
+use std::path::Path;
+
 use crate::ctf::{challenge, Ctf};
 use crate::db;
 
@@ -92,6 +94,41 @@ pub fn show_context() {
         },
         None => {
             println!("Currently working on nothing.");
+        }
+    }
+}
+
+pub fn change_directory() {
+    // get context
+    let (ctf, chall) = get_context();
+    match ctf {
+        Some(ctf) => {
+            match chall {
+                Some(chall) => {
+                    let category_dir = format!("{}/{}/{}", settings::WORKDIR, ctf.metadata.name, chall.category);
+                    let chall_dir = format!("{}/{}", category_dir, chall.name);
+                    let chall_path = Path::new(&chall_dir);
+                    if !chall_path.exists() {
+                        println!("Challenge directory not found.") // this code should never be reached based on other checks
+                    } else {
+                        // run system command to change directory
+                        println!("CHANGE_DIR: {}", chall_dir);
+                    }
+                },
+                None => {
+                    let ctf_dir = ctf.file_path;
+                    let ctf_path = Path::new(&ctf_dir);
+                    if !ctf_path.exists() {
+                        println!("CTF directory not found.") // this code should never be reached based on other checks
+                    } else {
+                        // change directory by outputting the path and using a shell script
+                        println!("CHANGE_DIR: {}", ctf_dir);
+                    }
+                }
+            }
+        },
+        None => {
+            println!("No context found. Create a new CTF or start working on an existing one.");
         }
     }
 }

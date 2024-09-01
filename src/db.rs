@@ -80,6 +80,13 @@ pub fn get_challenge_from_name(name: String) -> Result<ctf::challenge::Challenge
     Err(rusqlite::Error::QueryReturnedNoRows)
 }
 
+pub fn get_ctf_name_from_challenge(name: String) -> Result<String> {
+    let conn = get_conn();
+    let mut stmt = conn.prepare("SELECT ctf.name FROM ctf JOIN challenge ON ctf.id = challenge.ctf_id WHERE challenge.name = ?1")?;
+    let ctf_name: String = stmt.query_row(params![name], |row| row.get(0))?;
+    Ok(ctf_name)
+}
+
 pub fn get_all_ctfs() -> Result<Vec<ctf::Ctf>> {
     let conn = get_conn();
     let mut stmt = conn.prepare("SELECT path, name, url, creds, start, end FROM ctf")?;

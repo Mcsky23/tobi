@@ -5,6 +5,7 @@
 Tobi is a CLI tool designed to help with organizing and managing CTF challenge workspaces.
 
 Command map:
+- `tobi ctf` - change dir to the current CTF workspace(if no chall is in scope, it will change to the CTF base dir)
 - `tobi new`
     - `ctf <ctf_name>` - creates a new CTF workspace and switches CTF context to it
     - `<chall_category> <chall_name>` - creates a new challenge workspace and switches context to it
@@ -23,12 +24,16 @@ Command map:
 
 
 ### TODO:
-- [ ] Implement directory switching
-- [ ] Challenge name parsing
-- [ ] Integrate ctf id into ctf struct
+- [x] Implement directory switching
+- [x] Challenge name parsing
 - [ ] Make context command accept a single parameter and determine if it is a ctf or chall(return option if multiple challs with same name)
+- [ ] Make some optimizations to the code because DB functions are called too many times
+- [ ] Integrate ctf id into ctf struct
 - [ ] Implement flag/solve command
 - [ ] Backup db to some cloud service(will look into this later)
-- [ ] Implement settings menu(maybe create a TUI)
+- [ ] Implement TUI settings menu
 - [ ] Create custom scripts for a workspace or for all workspaces
 - [ ] Remote pwn environment integration
+- [ ] Beautify prints
+- [ ] Make `tobi` command customizable
+- [ ] Add setting to automatically switch directory when switching context

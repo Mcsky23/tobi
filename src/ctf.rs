@@ -18,7 +18,7 @@ pub struct Meta {
 }
 
 pub struct Ctf {
-    file_path: String, 
+    pub file_path: String, 
     pub metadata: Meta,
     challenges: Vec<challenge::Challenge>,
 }

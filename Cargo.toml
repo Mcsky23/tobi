@@ -8,3 +8,7 @@ edition = "2021"
 [dependencies]
 chrono = "0.4.38"
 rusqlite = "0.32.1"
+
+[[bin]]
+name = "tobi-cli"
+path = "src/main.rs"
