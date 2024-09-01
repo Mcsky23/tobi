@@ -1,6 +1,8 @@
 use crate::settings;
 use std::path::Path;
 use std::fs;
+use crate::db;
+use rusqlite::{Connection, params};
 
 pub struct Challenge {
     pub name: String,
@@ -56,6 +58,17 @@ impl Challenge {
 
         let chall_dir = format!("{}/{}", category_dir, self.name);
         fs::create_dir(&chall_dir).unwrap();
+    }
+
+    pub fn save_to_db(&self, ctf_name: &String, ctf_id: i32) {
+        if !db::chall_exists(ctf_name, &self.name) {
+            let conn: Connection = db::get_conn();
+            conn.execute("INSERT INTO challenge (ctf_id, name, category, flag) VALUES (?1, ?2, ?3, ?4)", params![ctf_id, self.name, self.category.to_string(), self.flag]).unwrap();
+        } else {
+            // update challenge
+            let conn = db::get_conn();
+            conn.execute("UPDATE challenge SET flag = ?1 WHERE ctf_id = ?2 AND name = ?3", params![self.flag, ctf_id, self.name]).unwrap();
+        }
     }
 }
 

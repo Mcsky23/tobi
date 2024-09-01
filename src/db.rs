@@ -114,3 +114,15 @@ pub fn chall_exists(ctf_name: &String, chall_name: &String) -> bool {
     let count: i32 = stmt.query_row(params![ctf_name, chall_name], |row| row.get(0)).unwrap();
     count > 0
 }
+
+pub fn ctf_exists(name: &String) -> Option<i32> {
+    let conn = get_conn();
+    let mut stmt = conn.prepare("SELECT COUNT(*) FROM ctf WHERE name = ?1").unwrap();
+    let count: i32 = stmt.query_row(params![name], |row| row.get(0)).unwrap();
+    if count > 0 {
+        let mut stmt = conn.prepare("SELECT id FROM ctf WHERE name = ?1").unwrap();
+        let id: i32 = stmt.query_row(params![name], |row| row.get(0)).unwrap();
+        return Some(id);
+    }
+    None
+}

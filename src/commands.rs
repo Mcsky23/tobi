@@ -43,25 +43,18 @@ pub fn do_action(args: Vec<String>) {
             match args.len() {
                 2 => {
                     // show context
-                    let (ctf, chall) = context::get_context();
-                    match ctf {
-                        Some(ctf) => {
-                            match chall {
-                                Some(chall) => {
-                                    println!("Currently working on {} -> {} [{}]", ctf.metadata.name, chall.name, chall.category);
-                                },
-                                None => {
-                                    println!("Currently working on {}", ctf.metadata.name);
-                                }
-                            }
-                        },
-                        None => {
-                            println!("Currently working on nothing.");
-                        }
-                    }
+                    context::show_context();
                 },
                 3 => {
-                    todo!();
+                    // set context
+                    let ctf_name = &args[2];
+                    context::switch_context(ctf_name, None);
+                },
+                4 => {
+                    // set context
+                    let ctf_name = &args[2];
+                    let chall_name = &args[3];
+                    context::switch_context(ctf_name, Some(chall_name));
                 },
                 _ => {
                     println!("Invalid number of arguments");
