@@ -9,14 +9,6 @@ edition = "2021"
 chrono = "0.4.38"
 rusqlite = "0.32.1"
 
-[dependencies.uuid]
-version = "1.10.0"
-features = [
-    "v4",                # Lets you generate random UUIDs
-    "fast-rng",          # Use a faster (but still sufficiently random) RNG
-    "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
-]
-
 [[bin]]
 name = "tobi-cli"
 path = "src/main.rs"
