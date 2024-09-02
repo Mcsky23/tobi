@@ -55,36 +55,127 @@ pub fn do_action(args: Vec<String>) {
                     ctf::new_challenge(name.to_string(), chall_type.to_string());
                 }
             }
-
+            
         },
         "list" => {
             // TODO: list ctfs individually
             // For now, just list all ctfs
-            let ctfs = db::get_all_ctfs().unwrap();
-            if ctfs.len() == 0 {
-                println!("No ctfs found");
+            match args.len() {
+                2 => { // list all ctfs
+                    let ctfs = db::get_all_ctfs(&db::get_conn()).unwrap();
+                    if ctfs.len() == 0 {
+                        println!("No ctfs found");
+                    }
+                    for ctf in ctfs {
+                        println!("{}", ctf.metadata.name);
+                    }
+                },
+                3 => { // list all chalenges in ctf
+                    match args[2].as_str() {
+                        "all" => {
+                            let ctfs = db::get_all_ctfs(&db::get_conn()).unwrap();
+                            if ctfs.len() == 0 {
+                                println!("No ctfs found");
+                            }
+                            for ctf in ctfs {
+                                ctf.print_challs();
+                                println!();
+                            }
+                            return;
+                        },
+                        _ => {
+                            let ctf_name = args[2].validate();
+                            let conn = db::get_conn();
+                            let ctf = db::get_ctf_from_name(&conn, ctf_name.to_string()).unwrap_or_else(|_| {
+                                println!("CTF not found");
+                                std::process::exit(1);
+                            });
+                            
+                            ctf.print_challs();
+                        }
+                    }
+                },
+                _ => {
+                    println!("Invalid number of arguments");
+                    println!("Usage: tobi list - list all ctfs");
+                    println!("       tobi list <ctf> - list all challenges in ctf");
+                }
             }
-            for ctf in ctfs {
-                println!("{}", ctf.metadata.name);
+            
+        },
+        "solve" => {
+            // solve the current challenge
+            let (ctf, challenge) = context::get_context();
+            if let None = ctf {
+                println!("No CTF found in context");
+                std::process::exit(1);
             }
-
+            let ctf = ctf.unwrap();
+            if args.len() != 3 {
+                println!("Invalid number of arguments");
+                println!("Usage: tobi solve <flag>");
+                std::process::exit(1);
+            }
+            let flag = args[2].to_string();
+            
+            match challenge {
+                Some(mut challenge) => {
+                    // solve challenge
+                    challenge.flag = flag;
+                    challenge.save_to_db(&ctf.metadata.name);
+                    println!("Solved {} -> {} [{}]: {}", &ctf.metadata.name, &challenge.name, &challenge.category, &challenge.flag);
+                },
+                None => {
+                    println!("You are currently not working on a challenge");
+                    std::process::exit(1);
+                }
+            }
+        },
+        "unsolve" => {
+            // remove the flag from the current challenge
+            // solve the current challenge
+            let (ctf, challenge) = context::get_context();
+            if let None = ctf {
+                println!("No CTF found in context");
+                std::process::exit(1);
+            }
+            let ctf = ctf.unwrap();
+            if args.len() != 2 {
+                println!("Invalid number of arguments");
+                println!("Usage: tobi solve <flag>");
+                std::process::exit(1);
+            }
+            match challenge {
+                Some(mut challenge) => {
+                    // solve challenge
+                    challenge.flag = "".to_string();
+                    challenge.save_to_db(&ctf.metadata.name);
+                    println!("Unsolved {} -> {} [{}]", &ctf.metadata.name, &challenge.name, &challenge.category);
+                },
+                None => {
+                    println!("You are currently not working on a challenge");
+                    std::process::exit(1);
+                }
+            }
         },
         "context" => {
             match args.len() {
                 2 => {
                     // show context
                     context::show_context();
+                    
                 },
                 3 => {
                     // set context
                     let anon_name = args[2].validate();
+                    let conn = db::get_conn();
                     // figure if this is a ctf or a challenge by searching through db
-                    if db::get_ctf_from_name(anon_name.to_string()).is_ok() {
-                        context::switch_context(anon_name, None);
-                    } else if db::get_challenge_from_name(anon_name.to_string()).is_ok() {
+                    if db::get_ctf_from_name(&conn, anon_name.to_string()).is_ok() {
+                        context::switch_context( anon_name, None);
+                    } else if db::get_challenge_from_name(&conn, anon_name.to_string()).is_ok() {
                         // get ctf name from challenge
-                        let ctf_name = db::get_ctf_name_from_challenge(anon_name.to_string()).unwrap();
-
+                        let ctf_name = db::get_ctf_name_from_challenge(&conn, anon_name.to_string()).unwrap();
+                        
                         context::switch_context(&ctf_name, Some(anon_name));
                     } else {
                         println!("No ctf or challenge found with name {}", anon_name);

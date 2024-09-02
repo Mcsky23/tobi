@@ -17,14 +17,16 @@ pub fn get_context() -> (Option<Ctf>, Option<challenge::Challenge>) {
     let ctf_name = aux[0];
     let challenge_name = aux[1];
 
+    let conn = db::get_conn();
+
     let mut rez = (None, None);
     if ctf_name.len() > 0 {
-        let ctf = db::get_ctf_from_name(ctf_name.to_string()).unwrap();
+        let ctf = db::get_ctf_from_name(&conn, ctf_name.to_string()).unwrap();
         rez.0 = Some(ctf);
     }
 
     if challenge_name.len() > 0 {
-        let challenge = db::get_challenge_from_name(challenge_name.to_string()).unwrap();
+        let challenge = db::get_challenge_from_name(&conn, challenge_name.to_string()).unwrap();
         rez.1 = Some(challenge);
     }
     rez
@@ -57,11 +59,12 @@ pub fn save_context(ctf_name: Option<&String>, chall_name: Option<&String>) {
 }
 
 pub fn switch_context(ctf_name: &String, chall_name: Option<&String>) {
-    let ctf = db::get_ctf_from_name(ctf_name.to_string());
+    let conn = db::get_conn();
+    let ctf = db::get_ctf_from_name(&conn, ctf_name.to_string());
 
     match chall_name {
         Some(chall_name) => {
-            if !db::chall_exists(ctf_name, chall_name) {
+            if !db::chall_exists(&conn, ctf_name, chall_name) {
                 println!("Challenge not found in {}", ctf_name);
                 return;
             }
@@ -90,7 +93,10 @@ pub fn show_context() {
                 None => {
                     println!("Currently working on {}", ctf.metadata.name);
                 }
-            }
+            };
+            let conn = db::get_conn();
+            let (solved, total) = db::count_solved_and_total(&conn, &ctf.metadata.name);
+            println!("Solved {}/{}", solved, total);
         },
         None => {
             println!("Currently working on nothing.");

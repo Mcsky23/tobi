@@ -16,7 +16,7 @@ Command map:
     - `challs` - lists all the challenges in the current CTF workspace
     - `flags` - lists all the flags in the current challenge workspace
 
-- `tobi context` - prints the current context
+- `tobi context` - prints the current context and a couple stats
     - `<ctf_name>` - switches the current context to the specified CTF workspace
     - `<ctf_name> <chall_name>` - switches the current context to the specified challenge workspace
 
@@ -26,10 +26,10 @@ Command map:
 ### TODO:
 - [x] Implement directory switching
 - [x] Challenge name parsing
-- [ ] Make context command accept a single parameter and determine if it is a ctf or chall(return option if multiple challs with same name)
-- [ ] Make some optimizations to the code because DB functions are called too many times
-- [ ] Integrate ctf id into ctf struct
-- [ ] Implement flag/solve command
+- [x] Make context command accept a single parameter and determine if it is a ctf or chall(return option if multiple challs with same name)
+- [ ] Add checkboxes to `tobi list` output if the challenge is solved
+- [ ] Implement undo command
+- [x] Implement flag/solve command
 - [ ] Backup db to some cloud service(will look into this later)
 - [ ] Implement TUI settings menu
 - [ ] Create custom scripts for a workspace or for all workspaces

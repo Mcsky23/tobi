@@ -60,13 +60,18 @@ impl Challenge {
         fs::create_dir(&chall_dir).unwrap();
     }
 
-    pub fn save_to_db(&self, ctf_name: &String, ctf_id: i32) {
-        if !db::chall_exists(ctf_name, &self.name) {
-            let conn: Connection = db::get_conn();
+    pub fn save_to_db(&self, ctf_name: &String) {
+        let conn: Connection = db::get_conn();
+        let ctf_id = db::ctf_exists(&conn, ctf_name);
+        if ctf_id.is_none() {
+            println!("CTF not found");
+            std::process::exit(1);
+        }
+        let ctf_id = ctf_id.unwrap();
+        if !db::chall_exists(&conn, ctf_name, &self.name) {
             conn.execute("INSERT INTO challenge (ctf_id, name, category, flag) VALUES (?1, ?2, ?3, ?4)", params![ctf_id, self.name, self.category.to_string(), self.flag]).unwrap();
         } else {
             // update challenge
-            let conn = db::get_conn();
             conn.execute("UPDATE challenge SET flag = ?1 WHERE ctf_id = ?2 AND name = ?3", params![self.flag, ctf_id, self.name]).unwrap();
         }
     }

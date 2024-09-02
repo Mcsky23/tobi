@@ -1,0 +1,13 @@
+"filename", "language", "Rust", "Markdown", "Shell Script", "comment", "blank", "total"
+"/Users/mcsky/Desktop/Codeprojects/tobi/README.md", "Markdown", 0, 31, 0, 0, 8, 39
+"/Users/mcsky/Desktop/Codeprojects/tobi/install.sh", "Shell Script", 0, 0, 64, 14, 14, 92
+"/Users/mcsky/Desktop/Codeprojects/tobi/src/commands.rs", "Rust", 96, 0, 0, 8, 6, 110
+"/Users/mcsky/Desktop/Codeprojects/tobi/src/context.rs", "Rust", 117, 0, 0, 3, 15, 135
+"/Users/mcsky/Desktop/Codeprojects/tobi/src/ctf.rs", "Rust", 107, 0, 0, 4, 20, 131
+"/Users/mcsky/Desktop/Codeprojects/tobi/src/ctf/challenge.rs", "Rust", 75, 0, 0, 2, 8, 85
+"/Users/mcsky/Desktop/Codeprojects/tobi/src/db.rs", "Rust", 119, 0, 0, 1, 15, 135
+"/Users/mcsky/Desktop/Codeprojects/tobi/src/lib.rs", "Rust", 5, 0, 0, 0, 0, 5
+"/Users/mcsky/Desktop/Codeprojects/tobi/src/main.rs", "Rust", 7, 0, 0, 0, 3, 10
+"/Users/mcsky/Desktop/Codeprojects/tobi/src/settings.rs", "Rust", 3, 0, 0, 0, 0, 3
+"/Users/mcsky/Desktop/Codeprojects/tobi/tobirc.sh", "Shell Script", 0, 0, 10, 9, 3, 22
+"Total", "-", 529, 31, 74, 41, 92, 767

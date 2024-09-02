@@ -20,7 +20,7 @@ pub struct Meta {
 pub struct Ctf {
     pub file_path: String, 
     pub metadata: Meta,
-    challenges: Vec<challenge::Challenge>,
+    pub challenges: Vec<challenge::Challenge>,
 }
 
 impl Ctf {
@@ -43,20 +43,30 @@ impl Ctf {
     }
 
     pub fn save_to_db(&self) {
-        if let Some(_) = ctf_exists(&self.metadata.name) {
+        let conn: Connection = db::get_conn();
+        if let Some(_) = ctf_exists(&conn, &self.metadata.name) {
             // update ctf
-            let conn: Connection = db::get_conn();
             conn.execute(
                 "UPDATE ctf SET url = ?1, creds = ?2, start = ?3, end = ?4 WHERE name = ?5",
                 params![self.metadata.url, format!("{}:{}", self.metadata.creds.0, self.metadata.creds.1), self.metadata.start.to_rfc3339(), self.metadata.end.to_rfc3339(), self.metadata.name],
             ).unwrap();
         } else {
             // insert ctf
-            let conn: Connection = db::get_conn();
             conn.execute(
                 "INSERT INTO ctf (path, name, url, creds, start, end) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
                 params![self.file_path, self.metadata.name, self.metadata.url, format!("{}:{}", self.metadata.creds.0, self.metadata.creds.1), self.metadata.start.to_rfc3339(), self.metadata.end.to_rfc3339()],
             ).unwrap();
+        }
+    }
+
+    pub fn print_challs(&self) {
+        if self.challenges.len() == 0 {
+            println!("No challenges found in {}", self.metadata.name);
+            return;
+        }
+        println!("{}", self.metadata.name);
+        for challenge in self.challenges.iter() {
+            println!("    [{}] {}", challenge.category, challenge.name);
         }
     }
 }
@@ -106,25 +116,19 @@ pub fn new_challenge(name: String, category: String) {
         }
     };
 
+    let conn = db::get_conn();
     // check if challenge already exists in current CTF
-    if db::chall_exists(&ctf.metadata.name, &name) {
+    if db::chall_exists(&conn, &ctf.metadata.name, &name) {
         println!("Challenge already exists in current CTF");
         return;
     }
 
     let challenge = challenge::Challenge::new(name, category, "".to_string());
     challenge.create_file(&ctf.metadata.name);
-    if let Some(ctf_id) = db::ctf_exists(&ctf.metadata.name) {
-        challenge.save_to_db(&ctf.metadata.name, ctf_id);
-    } else {
-        println!("CTF not found in database");
-        return;
-    }
+
+    challenge.save_to_db(&ctf.metadata.name);
+
     context::save_context(Some(&ctf.metadata.name), Some(&challenge.name));
-
-    
-    
-
 
 }
 

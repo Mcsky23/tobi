@@ -35,8 +35,7 @@ pub fn get_conn() -> Connection {
     Connection::open(settings::DB_FILE).unwrap()
 }
 
-pub fn get_ctf_from_name(name: String) -> Result<ctf::Ctf> {
-    let conn = get_conn();
+pub fn get_ctf_from_name(conn: &Connection, name: String) -> Result<ctf::Ctf> {
     let mut stmt = conn.prepare("SELECT path, name, url, creds, start, end FROM ctf WHERE name = ?1")?;
     let ctf_iter = stmt.query_map(params![name], |row| {
         Ok(ctf::Ctf::new(
@@ -56,14 +55,28 @@ pub fn get_ctf_from_name(name: String) -> Result<ctf::Ctf> {
     })?;
 
     for ctf in ctf_iter {
-        return ctf;
+        // populate challenges
+        let mut ctf_buf = ctf.unwrap();
+        let mut stmt = conn.prepare("SELECT name, category, flag FROM challenge WHERE ctf_id = (SELECT id FROM ctf WHERE name = ?1)")?;
+        let challenge_iter = stmt.query_map(params![name], |row| {
+            Ok(ctf::challenge::Challenge::new(
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+            ))
+        })?;
+
+        for challenge in challenge_iter {
+            ctf_buf.add_challenge(challenge.unwrap());
+        }
+        return Ok(ctf_buf);
     }
 
     Err(rusqlite::Error::QueryReturnedNoRows)
 }
 
-pub fn get_challenge_from_name(name: String) -> Result<ctf::challenge::Challenge> {
-    let conn = get_conn();
+pub fn get_challenge_from_name(conn: &Connection, name: String) -> Result<ctf::challenge::Challenge> {
+
     let mut stmt = conn.prepare("SELECT name, category, flag FROM challenge WHERE name = ?1")?;
     let challenge_iter = stmt.query_map(params![name], |row| {
         Ok(ctf::challenge::Challenge::new(
@@ -80,15 +93,15 @@ pub fn get_challenge_from_name(name: String) -> Result<ctf::challenge::Challenge
     Err(rusqlite::Error::QueryReturnedNoRows)
 }
 
-pub fn get_ctf_name_from_challenge(name: String) -> Result<String> {
-    let conn = get_conn();
+pub fn get_ctf_name_from_challenge(conn: &Connection, name: String) -> Result<String> {
+
     let mut stmt = conn.prepare("SELECT ctf.name FROM ctf JOIN challenge ON ctf.id = challenge.ctf_id WHERE challenge.name = ?1")?;
     let ctf_name: String = stmt.query_row(params![name], |row| row.get(0))?;
     Ok(ctf_name)
 }
 
-pub fn get_all_ctfs() -> Result<Vec<ctf::Ctf>> {
-    let conn = get_conn();
+pub fn get_all_ctfs(conn: &Connection) -> Result<Vec<ctf::Ctf>> {
+
     let mut stmt = conn.prepare("SELECT path, name, url, creds, start, end FROM ctf")?;
     let ctf_iter = stmt.query_map(params![], |row| {
         Ok(ctf::Ctf::new(
@@ -109,21 +122,35 @@ pub fn get_all_ctfs() -> Result<Vec<ctf::Ctf>> {
 
     let mut ctfs = Vec::new();
     for ctf in ctf_iter {
-        ctfs.push(ctf.unwrap());
+        // populate challenges
+        let mut ctf_buf = ctf.unwrap();
+        let mut stmt = conn.prepare("SELECT name, category, flag FROM challenge WHERE ctf_id = (SELECT id FROM ctf WHERE name = ?1)")?;
+        let challenge_iter = stmt.query_map(params![ctf_buf.metadata.name], |row| {
+            Ok(ctf::challenge::Challenge::new(
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+            ))
+        })?;
+
+        for challenge in challenge_iter {
+            ctf_buf.add_challenge(challenge.unwrap());
+        }
+        ctfs.push(ctf_buf);
     }
 
     Ok(ctfs)
 }
 
-pub fn chall_exists(ctf_name: &String, chall_name: &String) -> bool {
-    let conn = get_conn();
+pub fn chall_exists(conn: &Connection, ctf_name: &String, chall_name: &String) -> bool {
+
     let mut stmt = conn.prepare("SELECT COUNT(*) FROM challenge WHERE ctf_id = (SELECT id FROM ctf WHERE name = ?1) AND name = ?2").unwrap();
     let count: i32 = stmt.query_row(params![ctf_name, chall_name], |row| row.get(0)).unwrap();
     count > 0
 }
 
-pub fn ctf_exists(name: &String) -> Option<i32> {
-    let conn = get_conn();
+pub fn ctf_exists(conn: &Connection, name: &String) -> Option<i32> {
+
     let mut stmt = conn.prepare("SELECT COUNT(*) FROM ctf WHERE name = ?1").unwrap();
     let count: i32 = stmt.query_row(params![name], |row| row.get(0)).unwrap();
     if count > 0 {
@@ -132,4 +159,16 @@ pub fn ctf_exists(name: &String) -> Option<i32> {
         return Some(id);
     }
     None
+}
+
+pub fn count_solved_and_total(conn: &Connection, ctf_name: &String) -> (i32, i32) {
+    // counts the number of solved challenges in the current context
+    let mut stmt = conn.prepare("SELECT COUNT(*) FROM challenge WHERE ctf_id = (SELECT id FROM ctf WHERE name = ?1)").unwrap();
+    let total: i32 = stmt.query_row(params![ctf_name], |row| row.get(0)).unwrap();
+
+    let mut stmt = conn.prepare("SELECT COUNT(*) FROM challenge WHERE ctf_id = (SELECT id FROM ctf WHERE name = ?1) AND length(flag) > 0").unwrap();
+
+    let solved: i32 = stmt.query_row(params![ctf_name], |row| row.get(0)).unwrap();
+
+    (solved, total)
 }
