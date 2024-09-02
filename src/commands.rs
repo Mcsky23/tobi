@@ -29,12 +29,16 @@ pub fn do_action(args: Vec<String>) {
                     context::change_directory();
                     context::show_context();
                 },
+                3 => {
+                    // change directory to specified ctf but don't change the context
+                    todo!();
+                }
                 _ => {
                     println!("Invalid number of arguments");
                     println!("Usage: tobi ctf - change to CTF directory");
                 }
             }
-        }
+        },
         "new" => {
             let what = args[2].validate().as_str();
             match what {
@@ -58,7 +62,6 @@ pub fn do_action(args: Vec<String>) {
             
         },
         "list" => {
-            // TODO: list ctfs individually
             // For now, just list all ctfs
             match args.len() {
                 2 => { // list all ctfs
@@ -163,7 +166,6 @@ pub fn do_action(args: Vec<String>) {
                 2 => {
                     // show context
                     context::show_context();
-                    
                 },
                 3 => {
                     // set context

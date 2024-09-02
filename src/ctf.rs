@@ -66,7 +66,7 @@ impl Ctf {
         }
         println!("{}", self.metadata.name);
         for challenge in self.challenges.iter() {
-            println!("    [{}] {}", challenge.category, challenge.name);
+            println!("  {} [{}] {}", if challenge.flag.len() > 0 { "✓" } else { " " }, challenge.category, challenge.name);
         }
     }
 }
