@@ -20,3 +20,34 @@ function tobi() {
     # Print output with the directory line removed
     echo "$output" | grep -v "CHANGE_DIR: "
 }
+
+function _tobi_completions() {
+    # complete the ctf name by looking in the workspace dir
+    local cur buf
+    cur="${COMP_WORDS[COMP_CWORD]}"
+
+    # check if the first arg is ctf or context
+    # if [[ ${COMP_WORDS[1]} == "ctf" ]] || [[ ${COMP_WORDS[1]} == "context" ]]; then
+    #     # check if I am at ctf argument or challenge argument
+    #     if [[ $COMP_CWORD -eq 2 ]]; then
+    #         # complete ctf name
+    #         COMPREPLY=($(compgen -W "$(tobi list ctfs)" -- "$cur"))
+    #     elif [[ $COMP_CWORD -eq 3 ]]; then
+    #         # complete challenge name
+    #         ctf=${COMP_WORDS[2]}
+
+    #         challenges=$(tobi list "$ctf" | grep -v "$ctf")
+    #         # split every line by space and get the last element
+    #         challenges=$(echo "$challenges" | awk '{print $NF}')
+
+    #         COMPREPLY=($(compgen -W "$challenges" -- "$cur"))
+    #     fi
+    # fi
+
+    buf=$(tobi _autocomplete "$((COMP_CWORD))" "${COMP_WORDS[@]:1}")
+    COMPREPLY=($(compgen -W "$buf" -- "$cur"))
+
+
+}
+
+complete -F _tobi_completions tobi

@@ -1,3 +1,4 @@
+use crate::autocompletions;
 use crate::ctf;
 use crate::db;
 use crate::context;
@@ -46,6 +47,29 @@ pub fn do_action(args: Vec<String>) {
                         }
                     }
                     
+                },
+                4 => {
+                    // change directory to specified ctf and challenge
+                    let ctf_name = args[2].validate();
+                    let chall_name = args[3].validate();
+                    let conn = db::get_conn();
+
+                    match db::get_ctf_from_name(&conn, ctf_name.to_string()) {
+                        Ok(ctf) => {
+                            match db::get_challenge_from_name(&conn, chall_name.to_string()) {
+                                Ok(chall) => {
+                                    UndoAction::new_dir_change().log_action();
+                                    println!("CHANGE_DIR: {}/{}", ctf.file_path, chall.category);
+                                },
+                                Err(_) => {
+                                    println!("Challenge not found");
+                                }
+                            }
+                        },
+                        Err(_) => {
+                            println!("CTF not found");
+                        }
+                    }
                 }
                 _ => {
                     println!("Invalid number of arguments");
@@ -231,6 +255,13 @@ pub fn do_action(args: Vec<String>) {
         "undo" => {
             // undo the last action
             undo();
+        },
+        "_autocomplete" => {
+            // autocomplete for shell
+            let prog_args = args[2..].join(" ");
+            let split_args = prog_args.split_whitespace().into_iter().map(|s| s.to_string()).collect::<Vec<String>>();
+
+            autocompletions::print_completion(split_args);
         }
         _ => {
             println!("Invalid action");

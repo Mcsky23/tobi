@@ -35,6 +35,8 @@ Command map:
 ## Installation
 Because changing the shell's directory from a running child process is not possible, `tobi` uses a wrapper bash script. This declares a helper function that ingests `tobi-cli`(the actual binary) output and changes the directory if needed. `tobi` wrapper is sourced in the shell's rc file.
 
+Note: Tobi also supports `tab auto-completion`. The wrapper script contains the auto-completion function.
+
 To install `tobi` clone the repo and simply run the install script with the needed arguments:
 ```bash
 ./install.sh --install-dir=<desired_install_dir> --rc-file=<shell rc file>
@@ -50,7 +52,7 @@ To install `tobi` clone the repo and simply run the install script with the need
 - [x] Add checkboxes to `tobi list` output if the challenge is solved
 - [x] Implement undo command
 - [x] Implement flag/solve command
-- [ ] Implement auto completion
+- [x] Implement auto completion
 - [ ] Backup db to some cloud service(will look into this later)
 - [ ] Implement TUI settings menu
 - [ ] Create custom scripts for a workspace or for all workspaces
