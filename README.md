@@ -47,8 +47,9 @@ To install `tobi` clone the repo and simply run the install script with the need
 - [x] Challenge name parsing
 - [x] Make context command accept a single parameter and determine if it is a ctf or chall(return option if multiple challs with same name)
 - [x] Add checkboxes to `tobi list` output if the challenge is solved
-- [ ] Implement undo command
+- [x] Implement undo command
 - [x] Implement flag/solve command
+- [ ] Implement auto completion
 - [ ] Backup db to some cloud service(will look into this later)
 - [ ] Implement TUI settings menu
 - [ ] Create custom scripts for a workspace or for all workspaces
