@@ -172,3 +172,16 @@ pub fn count_solved_and_total(conn: &Connection, ctf_name: &String) -> (i32, i32
 
     (solved, total)
 }
+
+pub fn remove_ctf(conn: &Connection, name: &String) {
+    // there is no point in removing challenges since the ctf has just been created
+    conn.execute("DELETE FROM ctf WHERE name = ?1", params![name]).unwrap();
+}
+
+pub fn remove_challenge(conn: &Connection, ctf_name: &String, chall_name: &String) {
+    conn.execute("DELETE FROM challenge WHERE ctf_id = (SELECT id FROM ctf WHERE name = ?1) AND name = ?2", params![ctf_name, chall_name]).unwrap();
+}
+
+pub fn set_chall_flag(conn: &Connection, ctf_name: &String, chall_name: &String, flag: &String) {
+    conn.execute("UPDATE challenge SET flag = ?1 WHERE ctf_id = (SELECT id FROM ctf WHERE name = ?2) AND name = ?3", params![flag, ctf_name, chall_name]).unwrap();
+}

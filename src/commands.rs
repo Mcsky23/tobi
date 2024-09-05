@@ -1,6 +1,7 @@
 use crate::ctf;
 use crate::db;
 use crate::context;
+use crate::undo::{UndoAction, undo};
 
 trait ArgName<T> {
     fn validate(&self) -> &T;
@@ -26,12 +27,25 @@ pub fn do_action(args: Vec<String>) {
         "ctf" => {
             match args.len() {
                 2 => {
+                    UndoAction::new_dir_change().log_action();
                     context::change_directory();
                     context::show_context();
                 },
                 3 => {
                     // change directory to specified ctf but don't change the context
-                    todo!();
+                    // check if ctf exists
+                    let ctf_name = args[2].validate();
+                    let conn = db::get_conn();
+                    match db::get_ctf_from_name(&conn, ctf_name.to_string()) {
+                        Ok(ctf) => {
+                            UndoAction::new_dir_change().log_action();
+                            println!("CHANGE_DIR: {}", ctf.file_path);
+                        },
+                        Err(_) => {
+                            println!("CTF not found");
+                        }
+                    }
+                    
                 }
                 _ => {
                     println!("Invalid number of arguments");
@@ -48,6 +62,7 @@ pub fn do_action(args: Vec<String>) {
                         println!("Usage: tobi new ctf <name> - create a new ctf");
                     }
                     let name = args[3].validate();
+                    UndoAction::new_ctf_create(name).log_action();
                     ctf::quick_new(name.to_string());
                 },
                 chall_type => {
@@ -57,6 +72,7 @@ pub fn do_action(args: Vec<String>) {
                     }
                     let name = args[3].validate();
                     ctf::new_challenge(name.to_string(), chall_type.to_string());
+                    UndoAction::new_chall_create(&name).log_action(); // no need to error check here, if there is no ctf in scope program exits anyways
                 }
             }
             
@@ -64,18 +80,18 @@ pub fn do_action(args: Vec<String>) {
         "list" => {
             // For now, just list all ctfs
             match args.len() {
-                2 => { // list all ctfs
-                    let ctfs = db::get_all_ctfs(&db::get_conn()).unwrap();
-                    if ctfs.len() == 0 {
-                        println!("No ctfs found");
+                2 => { // list all challenges in current ctf
+                    let (ctf, _) = context::get_context();
+                    if let None = ctf {
+                        println!("No CTF found in context");
+                        std::process::exit(1);
                     }
-                    for ctf in ctfs {
-                        println!("{}", ctf.metadata.name);
-                    }
+                    let ctf = ctf.unwrap();
+                    ctf.print_challs();
                 },
-                3 => { // list all chalenges in ctf
+                3 => { 
                     match args[2].as_str() {
-                        "all" => {
+                        "all" => { // list all chalenges in all ctfs
                             let ctfs = db::get_all_ctfs(&db::get_conn()).unwrap();
                             if ctfs.len() == 0 {
                                 println!("No ctfs found");
@@ -86,6 +102,18 @@ pub fn do_action(args: Vec<String>) {
                             }
                             return;
                         },
+                        "ctfs" => { // list all ctf names
+                            let ctfs = db::get_all_ctfs(&db::get_conn()).unwrap();
+                            if ctfs.len() == 0 {
+                                println!("No ctfs found");
+                            }
+                            for ctf in ctfs {
+                                println!("{}", ctf.metadata.name);
+                            }
+                        },
+                        "flags" => { // list all challenges with flags
+                            todo!();
+                        }
                         _ => {
                             let ctf_name = args[2].validate();
                             let conn = db::get_conn();
@@ -126,6 +154,7 @@ pub fn do_action(args: Vec<String>) {
                     // solve challenge
                     challenge.flag = flag;
                     challenge.save_to_db(&ctf.metadata.name);
+                    UndoAction::new_chall_solve(&ctf.metadata.name, &challenge.name).log_action();
                     println!("Solved {} -> {} [{}]: {}", &ctf.metadata.name, &challenge.name, &challenge.category, &challenge.flag);
                 },
                 None => {
@@ -151,6 +180,7 @@ pub fn do_action(args: Vec<String>) {
             match challenge {
                 Some(mut challenge) => {
                     // solve challenge
+                    UndoAction::new_chall_unsolve(&ctf.metadata.name, &challenge.name, &challenge.flag).log_action();
                     challenge.flag = "".to_string();
                     challenge.save_to_db(&ctf.metadata.name);
                     println!("Unsolved {} -> {} [{}]", &ctf.metadata.name, &challenge.name, &challenge.category);
@@ -179,6 +209,7 @@ pub fn do_action(args: Vec<String>) {
                         let ctf_name = db::get_ctf_name_from_challenge(&conn, anon_name.to_string()).unwrap();
                         
                         context::switch_context(&ctf_name, Some(anon_name));
+                        UndoAction::new_context_switch(&ctf_name, Some(&anon_name)).log_action();
                     } else {
                         println!("No ctf or challenge found with name {}", anon_name);
                     }
@@ -188,6 +219,7 @@ pub fn do_action(args: Vec<String>) {
                     let ctf_name = args[2].validate();
                     let chall_name = args[3].validate();
                     context::switch_context(ctf_name, Some(chall_name));
+                    UndoAction::new_context_switch(ctf_name, Some(chall_name)).log_action();
                 },
                 _ => {
                     println!("Invalid number of arguments");
@@ -196,6 +228,10 @@ pub fn do_action(args: Vec<String>) {
                 }
             }
         },
+        "undo" => {
+            // undo the last action
+            undo();
+        }
         _ => {
             println!("Invalid action");
         }

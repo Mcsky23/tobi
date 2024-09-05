@@ -103,7 +103,7 @@ pub fn new_challenge(name: String, category: String) {
         },
         None => {
             println!("Invalid challenge type");
-            return;
+            std::process::exit(1);
         }
     };
 
@@ -112,7 +112,7 @@ pub fn new_challenge(name: String, category: String) {
         Some(ctf) => ctf,
         None => {
             println!("You are not working on any CTF");
-            return;
+            std::process::exit(1);
         }
     };
 
@@ -120,7 +120,7 @@ pub fn new_challenge(name: String, category: String) {
     // check if challenge already exists in current CTF
     if db::chall_exists(&conn, &ctf.metadata.name, &name) {
         println!("Challenge already exists in current CTF");
-        return;
+        std::process::exit(1);
     }
 
     let challenge = challenge::Challenge::new(name, category, "".to_string());
