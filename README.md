@@ -8,12 +8,12 @@ Command map:
 - `tobi ctf` - change dir to the current CTF workspace(if no chall is in scope, it will change to the CTF base dir)
     - `tobi ctf <ctf_name/chall_name>` - change dir to the specified CTF workspace
     - `tobi ctf <ctf_name> <chall_name>` - change dir to the specified challenge workspace
-Note: `tobi ctf` will **NOT** change context, only the directory
+
+        Note: `tobi ctf` will **NOT** change context, only the directory
 
 - `tobi new`
     - `ctf <ctf_name>` - creates a new CTF workspace and switches CTF context to it
     - `<chall_category> <chall_name>` - creates a new challenge workspace and switches context to it
-    - `flag <flag>` - solves the current challenge and saves the flag(use - as the flag to mark it as unsolved)
 
 - `tobi list` - list all challenges in the current context
     - `all` - lists all ctfs and all challenges
@@ -29,7 +29,8 @@ Note: `tobi ctf` will **NOT** change context, only the directory
 - `tobi unsolve` - marks the current challenge as unsolved
 
 - `tobi undo` - undoes the last action
-Note: An example use case for `tobi undo` is when you want to check out some other CTF files. When it's time to go back the context directory, instead of typing the challange name, you can simply run this command and it will take you back.
+
+    Note: An example use case for `tobi undo` is checking out some other CTF files. When it's time to go back to the context directory, instead of typing the challenge name, you can simply run this command and it will take you back.
 
 ## Installation
 Because changing the shell's directory from a running child process is not possible, `tobi` uses a wrapper bash script. This declares a helper function that ingests `tobi-cli`(the actual binary) output and changes the directory if needed. `tobi` wrapper is sourced in the shell's rc file.
