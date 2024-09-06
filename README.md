@@ -53,7 +53,7 @@ Tobi settings feature a TUI interface implemented in [ratatui](https://ratatui.r
 
 Main menu:
 
-<img src="./demo_img/main_menu1.png" width="70%">
+<img src="./demo_img/main_menu1.png" width="100%">
 
 ### TODO:
 - [x] Implement directory switching
