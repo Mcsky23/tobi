@@ -32,6 +32,8 @@ Command map:
 
     Note: An example use case for `tobi undo` is checking out some other CTF files. When it's time to go back to the context directory, instead of typing the challenge name, you can simply run this command and it will take you back.
 
+- `tobi settings` - opens TUI settings menu
+
 ## Installation
 Because changing the shell's directory from a running child process is not possible, `tobi` uses a wrapper bash script. This declares a helper function that ingests `tobi-cli`(the actual binary) output and changes the directory if needed. `tobi` wrapper is sourced in the shell's rc file.
 
@@ -44,6 +46,14 @@ To install `tobi` clone the repo and simply run the install script with the need
 # Example:
 ./install.sh --install-dir=/opt/scripts --rc-file=$(realpath ~/.zshrc)
 ```
+
+## Settings
+
+Tobi settings feature a TUI interface implemented in [ratatui](https://ratatui.rs). You can customize stuff like where tobi stores it's database or where CTF and challenge workspaces are created. It's also possible to customize the behavior of the `tobi` command.
+
+Main menu:
+
+<img src="./demo_img/main_menu1.png" width="70%">
 
 ### TODO:
 - [x] Implement directory switching

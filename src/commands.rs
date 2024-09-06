@@ -3,6 +3,7 @@ use crate::ctf;
 use crate::db;
 use crate::context;
 use crate::undo::{UndoAction, undo};
+use crate::settings;
 
 trait ArgName<T> {
     fn validate(&self) -> &T;
@@ -255,6 +256,9 @@ pub fn do_action(args: Vec<String>) {
         "undo" => {
             // undo the last action
             undo();
+        },
+        "settings" => {
+            settings::run_setting_menu().unwrap();
         },
         "_autocomplete" => {
             // autocomplete for shell
