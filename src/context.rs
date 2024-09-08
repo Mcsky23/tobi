@@ -8,7 +8,9 @@ use crate::db;
 use crate::settings;
 
 pub fn get_context() -> (Option<Ctf>, Option<challenge::Challenge>) { 
-    let buf = fs::read_to_string(settings::CONTEXT_FILE).unwrap_or_else(|_| {
+    let context_file = settings::SETTINGS.lock().unwrap().context_file.clone();
+    
+    let buf = fs::read_to_string(context_file).unwrap_or_else(|_| {
         println!("No context file found. Create a new CTF!");
         std::process::exit(1);
     });
@@ -34,6 +36,8 @@ pub fn get_context() -> (Option<Ctf>, Option<challenge::Challenge>) {
 }
 
 pub fn save_context(ctf_name: Option<&String>, chall_name: Option<&String>) {
+    let context_file = settings::SETTINGS.lock().unwrap().context_file.clone();
+
     let mut context = String::new();
     match ctf_name {
         Some(ctf_name) => {
@@ -54,7 +58,7 @@ pub fn save_context(ctf_name: Option<&String>, chall_name: Option<&String>) {
         }
     }
 
-    let mut file = fs::File::create(settings::CONTEXT_FILE).unwrap();
+    let mut file = fs::File::create(context_file).unwrap();
     file.write_all(context.as_bytes()).unwrap();
 }
 
@@ -106,12 +110,14 @@ pub fn show_context() {
 
 pub fn change_directory() {
     // get context
+    let workdir = settings::SETTINGS.lock().unwrap().workdir.clone();
+
     let (ctf, chall) = get_context();
     match ctf {
         Some(ctf) => {
             match chall {
                 Some(chall) => {
-                    let category_dir = format!("{}/{}/{}", settings::WORKDIR, ctf.metadata.name, chall.category);
+                    let category_dir = format!("{}/{}/{}", workdir, ctf.metadata.name, chall.category);
                     let chall_dir = format!("{}/{}", category_dir, chall.name);
                     let chall_path = Path::new(&chall_dir);
                     if !chall_path.exists() {

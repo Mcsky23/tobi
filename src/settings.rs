@@ -1,126 +1,65 @@
-pub static WORKDIR: &str = "/Users/mcsky/Desktop/Codeprojects/tobi_test";
-pub static DB_FILE: &str = "/Users/mcsky/Desktop/Codeprojects/tobi_test/tobi.db";
-pub static CONTEXT_FILE: &str = "/Users/mcsky/Desktop/Codeprojects/tobi_test/.context";
 
-pub mod main_menu;
-pub mod tui;
-pub mod center;
-pub mod list_selector_trait;
-
-use center::center;
 use std::io;
+use std::sync::Mutex;
+use lazy_static::lazy_static;
+use home::home_dir;
+use serde::{Serialize, Deserialize};
+use serde_json;
+use std::fs;
+use std::path::Path;
 
+pub mod settings_tui;
 
-use ratatui::{
-    buffer::Buffer,
-    crossterm::event::{self, Event, KeyEvent, KeyEventKind},
-    layout::{Constraint, Rect},
-    widgets::Widget,
-    Frame,
-};
-use std::cell::RefCell;
-
-pub struct App {
-    state: State,
+#[derive(Serialize, Deserialize)]
+pub struct Settings {
+    pub settings_file: String,
+    pub workdir: String,
+    pub db_file: String,
+    pub context_file: String,
 }
 
-pub trait AppMenuTrait {
-    fn handle_events(&mut self, event: KeyEvent) -> Result<(), io::Error>;
-    fn render(&mut self, area: Rect, buf: &mut Buffer);
-    fn poll_exit(&self) -> bool {
-        false
-    }
+lazy_static! {
+    pub static ref SETTINGS: Mutex<Settings> = Mutex::new(Settings {
+        settings_file: home_dir().unwrap().join(".tobi").to_str().unwrap().to_string(),
+        workdir: "Not set".to_string(),
+        db_file: "Not set".to_string(),
+        context_file: "Not set".to_string(),
+    });
 }
 
-enum State {
-    MainMenu(RefCell<Box<dyn AppMenuTrait>>),
-    PathMenu(RefCell<Box<dyn AppMenuTrait>>),
+pub fn load_settings_from_file() -> io::Result<()> {
+    let mut settings = SETTINGS.lock().unwrap();
+    let settings_path = Path::new(&settings.settings_file);
+    // check if settings file exists
+    if !settings_path.exists() {
+        return Err(io::Error::new(io::ErrorKind::NotFound, "Settings file not found"))
+    }
+
+    let settings_file = fs::File::open(settings_path)?;
+    *settings = serde_json::from_reader::<_, Settings>(settings_file)?;
+
+    // // check if settings paths are reachable with read_dir
+    // if  Path::new(&settings.workdir).read_dir().is_ok() &&
+    //     Path::new(&settings.db_file).read_dir().is_ok() &&
+    //     Path::new(&settings.context_file).read_dir().is_ok() {
+    //     return Ok(())
+    // }
+    if settings.workdir != "Not set" &&
+       settings.db_file != "Not set" &&
+       settings.context_file != "Not set" {
+        return Ok(())
+    }
+    Err(io::Error::new(io::ErrorKind::InvalidData, "Settings paths not found"))
 }
 
-impl State {
-    fn new_main_menu() -> Self {
-        Self::MainMenu(RefCell::new(Box::new(main_menu::Menu::default())))
-    }
-    fn new_path_menu() -> Self {
-        Self::PathMenu(RefCell::new(Box::new(main_menu::Menu::default())))
-    }
+pub fn save_settings_to_file() -> io::Result<()> {
+    let settings = SETTINGS.lock().unwrap();
+    let settings_file = fs::File::create(&settings.settings_file)?;
+    serde_json::to_writer(settings_file, &*settings)?;
 
-    fn handle_events(&self) -> Result<(), io::Error> {
-
-        match self {
-            Self::MainMenu(menu) | Self::PathMenu(menu) => {
-                let event = match event::read()? {
-                    Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                        key_event
-                    },
-                    _ => return Ok(()),
-                };
-                menu.borrow_mut().handle_events(event)
-            }
-        }
-    }
-
-    fn poll_exit(&self) -> bool {
-        match self {
-            Self::MainMenu(menu) | Self::PathMenu(menu) => {
-                menu.borrow().poll_exit()
-            }
-        }
-    }
-
-    fn render(&self, area: Rect, buf: &mut Buffer) {
-        match self {
-            Self::MainMenu(menu) | Self::PathMenu(menu) => {
-                menu.borrow_mut().render(area, buf)
-            }
-        }
-    }
+    Ok(())
 }
 
-impl Default for App {
-    fn default() -> Self {
-        Self {
-            state: State::new_main_menu(),
-        }
-    }
-}
-
-impl App {
-    pub fn run(&mut self, terminal: &mut tui::Tui) -> io::Result<()> {
-        while !self.state.poll_exit() {
-            terminal.draw(|frame| self.render_frame(frame))?;
-            self.handle_events()?;
-        }
-        Ok(())
-    }
-
-    fn render_frame(&mut self, frame: &mut Frame) {
-        let area = center(
-            frame.area(),
-            Constraint::Length(120),
-            Constraint::Length(30),
-        );
-
-        frame.render_widget(self, area);
-    }
-
-    fn handle_events(&mut self) -> io::Result<()> {
-        self.state.handle_events()
-    }
-}
-
-impl Widget for &mut App {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        self.state.render(area, buf);
-    }
-}
-
-pub fn run_setting_menu() -> io::Result<()> {
-    let mut terminal = tui::init_terminal()?;
-    terminal.clear()?;
-
-    let mut app = App::default();
-    let app_result = app.run(&mut terminal);
-    tui::restore_terminal()?;
-    app_result
+pub fn show_settings_menu() -> io::Result<()> {
+    settings_tui::run_setting_menu()
 }

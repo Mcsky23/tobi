@@ -2,9 +2,9 @@ use rusqlite::{Connection, Result, params};
 use crate::ctf;
 use crate::settings;
 
-pub fn init() {
+pub fn init_db() -> Result<(), rusqlite::Error> {
     // Create a new SQLite database
-    let conn = Connection::open(settings::DB_FILE).unwrap();
+    let conn = get_conn();
     conn.execute(
         "CREATE TABLE IF NOT EXISTS ctf (
             id INTEGER PRIMARY KEY,
@@ -29,10 +29,13 @@ pub fn init() {
         )",
         params![],
     ).unwrap();
+    Ok(())
+
 }
 
 pub fn get_conn() -> Connection {
-    Connection::open(settings::DB_FILE).unwrap()
+    let db_file = settings::SETTINGS.lock().unwrap().db_file.clone();
+    Connection::open(db_file).unwrap()
 }
 
 pub fn get_ctf_from_name(conn: &Connection, name: String) -> Result<ctf::Ctf> {

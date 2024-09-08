@@ -10,6 +10,7 @@ pub fn print_completion(args: Vec<String>) {
             println!("solve");
             println!("unsolve");
             println!("undo");
+            println!("settings");
         },
         2 => {
             match args[1].as_str() {

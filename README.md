@@ -49,7 +49,7 @@ To install `tobi` clone the repo and simply run the install script with the need
 
 ## Settings
 
-Tobi settings feature a TUI interface implemented in [ratatui](https://ratatui.rs). You can customize stuff like where tobi stores it's database or where CTF and challenge workspaces are created. It's also possible to customize the behavior of the `tobi` command.
+Tobi settings feature a TUI interface implemented using [ratatui](https://ratatui.rs). You can customize stuff like where tobi stores it's database or where CTF and challenge workspaces are created. It's also possible to customize the behavior of the `tobi` command.
 
 Main menu:
 
@@ -63,6 +63,7 @@ Main menu:
 - [x] Implement undo command
 - [x] Implement flag/solve command
 - [x] Implement auto completion
+- [ ] Check if `script -q /dev/null tobi-cli "$@"` works on linux
 - [ ] Backup db to some cloud service(will look into this later)
 - [ ] Implement TUI settings menu
 - [ ] Create custom scripts for a workspace or for all workspaces

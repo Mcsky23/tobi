@@ -1,7 +1,6 @@
 use std::io;
 use ratatui::widgets::StatefulWidget;
 
-
 use ratatui::{
     buffer::Buffer,
     crossterm::event::{KeyCode, KeyEvent},
@@ -16,16 +15,18 @@ use ratatui::{
     },
 };
 
-use crate::settings::list_selector_trait::{HasListState, ListStateSelector};
-use crate::settings::AppMenuTrait;
+use crate::settings::settings_tui::list_selector_trait::{HasListState, ListStateSelector};
+use crate::settings::{SETTINGS, settings_tui::AppMenuTrait};
 
-struct MenuItem {
+pub mod explorer;
+
+pub struct MenuItem {
     title: String,
     description: String,
 }
 
 pub struct Menu {
-    items: Vec<MenuItem>,
+    pub items: Vec<MenuItem>,
     pub state: ListState,
     pub should_exit: bool,
 }
@@ -39,23 +40,24 @@ impl HasListState for Menu {
 impl ListStateSelector for Menu {}
 
 impl MenuItem {
-    fn new(title: &str, description: &str) -> Self {
+    fn new(title: &str, description: String) -> Self {
         Self {
             title: title.to_string(),
-            description: description.to_string(),
+            description: description,
         }
     }
 }
 
 impl Default for Menu {
     fn default() -> Self {
+        let cur_settings = SETTINGS.lock().unwrap();
         let mut state = ListState::default();
         state.select(Some(0));
         Self {
             items: vec![
-                MenuItem::new("Path Settings", "Change default path for CTFs, db, etc."),
-                MenuItem::new("Behavior Settings", "Customize tobi behavior to your liking"),
-                MenuItem::new("Info", "Info about tobi"),
+                MenuItem::new("CTF path", cur_settings.workdir.clone()),
+                MenuItem::new("DB path", cur_settings.db_file.clone()),
+                MenuItem::new("Context path", cur_settings.context_file.clone()),
             ],
             state: state,
             should_exit: false,
@@ -64,19 +66,22 @@ impl Default for Menu {
 }
 
 impl AppMenuTrait for Menu {
-    fn handle_events(&mut self, event: KeyEvent) -> Result<(), io::Error> {
+    fn handle_events(&mut self, event: KeyEvent) -> Result<Option<i32>, io::Error> {
         match self.handle_list_key_event(event) {
-            Ok(_) => return Ok(()),
+            Ok(_) => return Ok(None),
             Err(_) => {}
         }
         match event.code {
             KeyCode::Char('q') => {
-                self.should_exit = true;
+                return Ok(Some(0));
             },
-
+            KeyCode::Enter => {
+                // open file explorer
+                return Ok(Some(2));
+            }
             _ => {}
         }
-        Ok(())
+        Ok(None)
     }
 
     fn poll_exit(&self) -> bool {
@@ -86,12 +91,19 @@ impl AppMenuTrait for Menu {
     fn render(&mut self, area: Rect, buf: &mut Buffer) {
         self._render(area, buf);
     }
+
+    fn get_selected_item(&self) -> Option<Box<String>> {
+        let selected = self.state.selected()?;
+        Some(Box::new(self.items[selected].title.clone()))
+    }
 }
 
 impl Menu {
+
     fn _render(&mut self, area: Rect, buf: &mut Buffer) {
         self.render_block(area, buf);
     }
+
 
     fn render_list(&mut self, area: Rect, buf: &mut Buffer, block: &Block) {
         let list_block = Block::new()

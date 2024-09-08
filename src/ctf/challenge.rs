@@ -51,7 +51,9 @@ impl Challenge {
 
     pub fn create_file(&self, ctf_name: &str) {
         // check if category directory exists
-        let category_dir = format!("{}/{}/{}", settings::WORKDIR, ctf_name, self.category);
+        let workdir = settings::SETTINGS.lock().unwrap().workdir.clone();
+
+        let category_dir = format!("{}/{}/{}", workdir, ctf_name, self.category);
         if !Path::new(&category_dir).exists() {
             fs::create_dir(&category_dir).unwrap();
         }

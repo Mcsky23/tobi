@@ -258,7 +258,7 @@ pub fn do_action(args: Vec<String>) {
             undo();
         },
         "settings" => {
-            settings::run_setting_menu().unwrap();
+            settings::show_settings_menu().unwrap();
         },
         "_autocomplete" => {
             // autocomplete for shell

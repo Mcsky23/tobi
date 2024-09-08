@@ -8,6 +8,7 @@ use serde_json;
 use crate::db;
 use std::fs;
 use crate::context;
+use crate::settings;
 
 #[derive(Serialize, Deserialize)]
 pub struct UndoAction {
@@ -52,13 +53,14 @@ impl UndoAction {
     }
 
     fn undo_ctf_create(&self) {
+        let workdir = settings::SETTINGS.lock().unwrap().workdir.clone();
         let name = &self.args[0];
         // remove ctf from db
         db::remove_ctf(&db::get_conn(), name);
         context::save_context(None, None);
 
         // remove ctf directory
-        let file_path = crate::settings::WORKDIR.to_string() + "/" + name;
+        let file_path = workdir + "/" + name;
         fs::remove_dir_all(file_path).unwrap();
 
         println!("Removed CTF {}", name);

@@ -72,7 +72,8 @@ impl Ctf {
 }
 
 pub fn quick_new(name: String) {
-    let file_path = settings::WORKDIR.to_string() + "/" + &name;
+    let workdir = settings::SETTINGS.lock().unwrap().workdir.clone();
+    let file_path = workdir + "/" + &name;
     match fs::create_dir(&file_path) {
         Ok(_) => {
             println!("Created new CTF at {}", file_path);
