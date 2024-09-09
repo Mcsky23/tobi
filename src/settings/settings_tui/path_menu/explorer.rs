@@ -115,15 +115,34 @@ impl AppMenuTrait for FileList {
                 let selected_path = self.cur_path.join(&self.items[selected]).to_str().unwrap().to_string();
                 match self.selecting_for.as_str() {
                     "CTF path" => {
-                        SETTINGS.lock().unwrap().workdir = selected_path;
+                        SETTINGS.lock().unwrap().workdir = selected_path.clone();
+                        if SETTINGS.lock().unwrap().db_file == "Not set" {
+                            SETTINGS.lock().unwrap().db_file = selected_path.clone() + "/tobi.db";
+                        }
+                        if SETTINGS.lock().unwrap().context_file == "Not set" {
+                            SETTINGS.lock().unwrap().context_file = selected_path.clone() + "/.tobicntxt";
+                        }
                         return Ok(Some(1));
                     },
                     "DB path" => {
-                        SETTINGS.lock().unwrap().db_file = selected_path + "/tobi.db";
+                        SETTINGS.lock().unwrap().db_file = selected_path.clone() + "/tobi.db";
+                        if SETTINGS.lock().unwrap().context_file == "Not set" {
+                            SETTINGS.lock().unwrap().context_file = selected_path.clone() + "/.tobicntxt";
+                        }
+                        if SETTINGS.lock().unwrap().workdir == "Not set" {
+                            SETTINGS.lock().unwrap().workdir = selected_path.clone();
+                        }
+
                         return Ok(Some(1));
                     },
                     "Context path" => {
-                        SETTINGS.lock().unwrap().context_file = selected_path + "/.tobicntxt";
+                        SETTINGS.lock().unwrap().context_file = selected_path.clone() + "/.tobicntxt";
+                        if SETTINGS.lock().unwrap().db_file == "Not set" {
+                            SETTINGS.lock().unwrap().db_file = selected_path.clone() + "/tobi.db";
+                        }
+                        if SETTINGS.lock().unwrap().workdir == "Not set" {
+                            SETTINGS.lock().unwrap().workdir = selected_path.clone();
+                        }
                         return Ok(Some(1));
                     },
                     _ => {}

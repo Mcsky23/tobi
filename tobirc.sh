@@ -4,7 +4,13 @@
 function tobi() {
     # Run tobi with the arguments passed to this function
     if [[ $1 == "settings" ]]; then
-        script -q /dev/null tobi-cli "$@"
+        # check if I am on macOS or Linux by running uname
+        unameOut="$(uname)"
+        if [[ $unameOut == "Darwin" ]]; then
+            script -q /dev/null tobi-cli "$@"
+        else
+            script -q -c "tobi-cli $*" /dev/null
+        fi
         return
     fi
 

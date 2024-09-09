@@ -16,6 +16,7 @@ pub struct Settings {
     pub workdir: String,
     pub db_file: String,
     pub context_file: String,
+    pub tobi_command: String,
 }
 
 lazy_static! {
@@ -24,6 +25,7 @@ lazy_static! {
         workdir: "Not set".to_string(),
         db_file: "Not set".to_string(),
         context_file: "Not set".to_string(),
+        tobi_command: "ctf".to_string(),
     });
 }
 

@@ -3,7 +3,7 @@ use crate::ctf;
 use crate::db;
 use crate::context;
 use crate::undo::{UndoAction, undo};
-use crate::settings;
+use crate::settings::{self, SETTINGS};
 
 trait ArgName<T> {
     fn validate(&self) -> &T;
@@ -20,9 +20,10 @@ impl ArgName<String> for String {
     }
 }
 
-pub fn do_action(args: Vec<String>) {
+pub fn do_action(mut args: Vec<String>) {
     if args.len() == 1 {
-        context::show_context();
+        let tobi_command = SETTINGS.lock().unwrap().tobi_command.clone();
+        args.push(tobi_command);
     }
     let action = args[1].validate().as_str();
     match action {

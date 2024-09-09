@@ -1,5 +1,6 @@
 pub mod main_menu;
 pub mod path_menu;
+pub mod behaviour_menu;
 pub mod tui;
 pub mod center;
 pub mod list_selector_trait;
@@ -37,6 +38,7 @@ enum State {
     MainMenu(RefCell<Box<dyn AppMenuTrait>>),
     PathMenu(RefCell<Box<dyn AppMenuTrait>>),
     FileExplorer(RefCell<Box<dyn AppMenuTrait>>),
+    BehaviourMenu(RefCell<Box<dyn AppMenuTrait>>),
 }
 
 impl State {
@@ -55,11 +57,16 @@ impl State {
         }))))
     }
 
+    fn new_behaviour_menu() -> Self {
+        Self::BehaviourMenu(RefCell::new(Box::new(behaviour_menu::Menu::default())))
+    }
+
     fn to_idx(&self) -> i32 {
         match self {
             Self::MainMenu(_) => 0,
             Self::PathMenu(_) => 1,
             Self::FileExplorer(_) => 2,
+            Self::BehaviourMenu(_) => 3,
         }
     }
 
@@ -68,6 +75,7 @@ impl State {
             0 => Self::new_main_menu(),
             1 => Self::new_path_menu(),
             2 => Self::new_file_explorer(&self),
+            3 => Self::new_behaviour_menu(),
             _ => Self::new_main_menu(),
         }
     }
@@ -75,7 +83,9 @@ impl State {
     fn handle_events(&self) -> Result<Option<i32>, io::Error> {
 
         match self {
-            Self::MainMenu(menu) | Self::PathMenu(menu) | Self::FileExplorer(menu) => {
+            Self::MainMenu(menu) | Self::PathMenu(menu) | Self::FileExplorer(menu) |
+            Self::BehaviourMenu(menu) 
+            => {
                 let event = match event::read()? {
                     Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
                         key_event
@@ -89,7 +99,8 @@ impl State {
 
     fn poll_exit(&self) -> bool {
         match self {
-            Self::MainMenu(menu) | Self::PathMenu(menu) | Self::FileExplorer(menu) => {
+            Self::MainMenu(menu) | Self::PathMenu(menu) | Self::FileExplorer(menu) |
+            Self::BehaviourMenu(menu) => {
                 menu.borrow().poll_exit()
             }
         }
@@ -97,7 +108,8 @@ impl State {
 
     fn render(&self, area: Rect, buf: &mut Buffer) {
         match self {
-            Self::MainMenu(menu) | Self::PathMenu(menu) | Self::FileExplorer(menu) => {
+            Self::MainMenu(menu) | Self::PathMenu(menu) | Self::FileExplorer(menu) |
+            Self::BehaviourMenu(menu) => {
                 menu.borrow_mut().render(area, buf)
             }
         }

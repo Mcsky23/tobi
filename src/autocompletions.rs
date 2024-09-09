@@ -37,7 +37,7 @@ pub fn print_completion(args: Vec<String>) {
         },
         3 => {
             match args[1].as_str() {
-                "ctf" => {
+                "ctf" | "context" => {
                     // print all challenge names from ctf
                     let ctf_name = &args[2];
                     let conn = db::get_conn();

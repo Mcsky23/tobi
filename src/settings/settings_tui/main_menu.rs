@@ -79,6 +79,10 @@ impl AppMenuTrait for Menu {
                         // open path menu
                         return Ok(Some(1))
                     },
+                    Some(1) => {
+                        // open behaviour menu
+                        return Ok(Some(3))
+                    },
                     _ => {}
                 }
             },
