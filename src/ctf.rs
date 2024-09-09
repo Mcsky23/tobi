@@ -59,14 +59,19 @@ impl Ctf {
         }
     }
 
-    pub fn print_challs(&self) {
+    pub fn print_challs(&self, with_flags: bool) {
         if self.challenges.len() == 0 {
             println!("No challenges found in {}", self.metadata.name);
             return;
         }
         println!("{}", self.metadata.name);
         for challenge in self.challenges.iter() {
-            println!("  {} [{}] {}", if challenge.flag.len() > 0 { "✓" } else { " " }, challenge.category, challenge.name);
+            print!("  {} [{}] {}", if challenge.flag.len() > 0 { "✓" } else { " " }, challenge.category, challenge.name);
+            if with_flags {
+                println!("{} {}", " ".repeat(30 - challenge.name.len()), challenge.flag);
+            } else {
+                println!();
+            }
         }
     }
 }

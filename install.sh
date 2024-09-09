@@ -13,11 +13,16 @@ do
         echo "Options:"
         echo "  --help, -h: Display this help message"
         echo "  --install-dir=<directory>: Install tobi to the specified directory"
-        echo "  --rc-file=<file>: Install the helper bash function to the specified file"
-        echo "  --purge: Remove tobi from the specified install directory(rc-file restore is not implemented)"
+        echo "  --uninstall: Uninstall tobi"
         echo ""
-        echo "Example: ./install.sh --install-dir=/opt/scripts --rc-file=$(realpath ~/.zshrc)"
+        echo "Example: ./install.sh --install-dir=/opt/scripts"
+        echo "         ./install.sh --uninstall"
         exit 0
+    fi
+
+    if [[ $arg == --uninstall ]]; then
+        echo "Uninstalling tobi..."
+        UNINSTALL=true
     fi
 
     # check if the argument starts with --install-dir
@@ -34,23 +39,44 @@ do
         INSTALL_DIR=$install_dir
     fi
 
-    if [[ $arg == --rc-file=* ]]; then
-        # extract the file from the argument
-        rc_file=${arg#--rc-file=}
-
-        # check if the file exists
-        if [ ! -f "$rc_file" ]; then
-            echo "Error: File $rc_file does not exist"
-            exit 1
-        fi
-
-        RC_FILE=$rc_file
-    fi
-
     if [[ $arg == --purge ]]; then
         PURGE=true
     fi
 done
+
+# get rc file dir for current shell env var
+shell=".$(echo $SHELL | awk -F'/' '{print $3}')rc"
+RC_FILE="$HOME/$shell"
+
+echo "[+] Found shell rc file: $RC_FILE"
+
+# check if UNINSTALL is set
+
+if [ -n "$UNINSTALL" ]; then
+    # get install dir by searching in rc file
+    install_dir=$(grep -e "source.*tobirc.sh" $RC_FILE | sed -e 's/source //' -e 's/tobirc.sh//')
+    # remove last character if it's a slash
+    install_dir=$(echo $install_dir | sed 's/.$//')
+
+    # remove this line from the rc file
+    echo "[+] Removing tobi wrapper from $RC_FILE"
+
+    esc_install_dir=$(echo $install_dir | sed 's/\//\\\//g')
+    # check if it's macos or linux
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sudo sed -i '' "/source $esc_install_dir\/tobirc\.sh/d" $RC_FILE
+    else
+        sudo sed -i "/source $esc_install_dir\/tobirc\.sh/d" $RC_FILE
+    fi
+
+    # remove the tobi-cli and tobirc.sh
+    echo "[+] Removing tobi-cli from $install_dir"
+    sudo rm $install_dir/tobi-cli
+    echo "[+] Removing tobirc.sh from $install_dir"
+    sudo rm $install_dir/tobirc.sh
+    echo "[+] Done!"
+    exit 0
+fi
 
 # check if INSTALL_DIR and RC_FILE are not set
 if [ -z "$INSTALL_DIR" ]; then

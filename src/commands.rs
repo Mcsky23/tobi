@@ -4,6 +4,7 @@ use crate::db;
 use crate::context;
 use crate::undo::{UndoAction, undo};
 use crate::settings::{self, SETTINGS};
+use crate::help;
 
 trait ArgName<T> {
     fn validate(&self) -> &T;
@@ -27,6 +28,9 @@ pub fn do_action(mut args: Vec<String>) {
     }
     let action = args[1].validate().as_str();
     match action {
+        "help" => {
+            help::print_help();
+        },
         "ctf" => {
             match args.len() {
                 2 => {
@@ -113,7 +117,7 @@ pub fn do_action(mut args: Vec<String>) {
                         std::process::exit(1);
                     }
                     let ctf = ctf.unwrap();
-                    ctf.print_challs();
+                    ctf.print_challs(false);
                 },
                 3 => { 
                     match args[2].as_str() {
@@ -123,7 +127,7 @@ pub fn do_action(mut args: Vec<String>) {
                                 println!("No ctfs found");
                             }
                             for ctf in ctfs {
-                                ctf.print_challs();
+                                ctf.print_challs(false);
                                 println!();
                             }
                             return;
@@ -138,7 +142,13 @@ pub fn do_action(mut args: Vec<String>) {
                             }
                         },
                         "flags" => { // list all challenges with flags
-                            todo!();
+                            let (ctf, _) = context::get_context();
+                            if let None = ctf {
+                                println!("No CTF found in context");
+                                std::process::exit(1);
+                            }
+                            let ctf = ctf.unwrap();
+                            ctf.print_challs(true);
                         }
                         _ => {
                             let ctf_name = args[2].validate();
@@ -148,7 +158,7 @@ pub fn do_action(mut args: Vec<String>) {
                                 std::process::exit(1);
                             });
                             
-                            ctf.print_challs();
+                            ctf.print_challs(false);
                         }
                     }
                 },

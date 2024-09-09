@@ -33,22 +33,47 @@ Command map:
 
 - `tobi settings` - opens TUI settings menu
 
-## Installation
+## Quick setup
+
+### Installation
+
+To install `tobi`:
+- make sure you have `cargo` installed
+- clone this repo
+- run the install script with the needed arguments:
+```bash
+./install.sh --install-dir=<desired_install_dir>
+
+# Example:
+./install.sh --install-dir=/opt/scripts
+```
+
+### Uninstall
+```bash
+./install.sh --uninstall
+```
+
+### Info
+
+When installing, the script will:
+- compile the binary using `cargo`
+- copy the binary and the wrapper script to the specified directory
+- add `source <install_dir>/tobirc.sh` to your shell's rc file
+
+## Inner workings
+
+`tobi` uses a sqlite database to store information about the CTFs and challenges. For proper functionality, it relies on 3 files that are created on your system:
+- `DB_PATH/tobi.db` - the sqlite database
+- `CONTEXT_PATH/.tobicntxt` - the file that remembers the current context so that you can easily switch back to it
+- `/tmp/tobi` - a temporary file containing the last action so that you can undo it
+
 Because changing the shell's directory from a running child process is not possible, `tobi` uses a wrapper bash script. This declares a helper function that ingests `tobi-cli`(the actual binary) output and changes the directory if needed. `tobi` wrapper is sourced in the shell's rc file.
 
 Note: Tobi also supports `tab auto-completion`. The wrapper script contains the auto-completion function.
 
-To install `tobi` clone the repo and simply run the install script with the needed arguments:
-```bash
-./install.sh --install-dir=<desired_install_dir> --rc-file=<shell rc file>
-
-# Example:
-./install.sh --install-dir=/opt/scripts --rc-file=$(realpath ~/.zshrc)
-```
-
 ## Settings
 
-Tobi settings feature a TUI interface implemented using [ratatui](https://ratatui.rs). You can customize stuff like where tobi stores it's database or where CTF and challenge workspaces are created. It's also possible to customize the behavior of the `tobi` command.
+Tobi settings(`tobi settings`) feature a TUI interface implemented using [ratatui](https://ratatui.rs). You can customize stuff like where tobi stores it's database or where CTF and challenge workspaces are created. It's also possible to customize the behavior of the `tobi` command.
 
 <img src="./demo_img/main_menu1.png" width="100%">
 
