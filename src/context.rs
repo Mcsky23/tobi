@@ -23,12 +23,15 @@ pub fn get_context() -> (Option<Ctf>, Option<challenge::Challenge>) {
 
     let mut rez = (None, None);
     if ctf_name.len() > 0 {
-        let ctf = db::get_ctf_from_name(&conn, ctf_name.to_string()).unwrap();
+        let ctf = db::get_ctf_from_name(&conn, &ctf_name.to_string()).unwrap();
         rez.0 = Some(ctf);
     }
 
     if challenge_name.len() > 0 {
-        let challenge = db::get_challenge_from_name(&conn, challenge_name.to_string()).unwrap();
+        let challenge = db::get_challenge_from_name(&conn, challenge_name.to_string()).unwrap_or_else(|_| {
+            println!("Challenge {} not found. Context file may be corrupted", challenge_name);
+            std::process::exit(1);
+        });
         rez.1 = Some(challenge);
     }
     rez
@@ -62,13 +65,13 @@ pub fn save_context(ctf_name: Option<&String>, chall_name: Option<&String>) {
     file.write_all(context.as_bytes()).unwrap();
 }
 
-pub fn switch_context(ctf_name: &String, chall_name: Option<&String>) {
+pub fn switch_context(ctf_name: &String, chall_name: Option<&String>, _show_context: bool) {
     let conn = db::get_conn();
-    let ctf = db::get_ctf_from_name(&conn, ctf_name.to_string());
+    let ctf = db::get_ctf_from_name(&conn, ctf_name);
 
     match chall_name {
         Some(chall_name) => {
-            if !db::chall_exists(&conn, ctf_name, chall_name) {
+            if db::chall_exists(&conn, ctf_name, chall_name) == 0 {
                 println!("Challenge not found in {}", ctf_name);
                 return;
             }
@@ -83,7 +86,9 @@ pub fn switch_context(ctf_name: &String, chall_name: Option<&String>) {
             println!("CTF not found");
         }
     }
-    show_context();
+    if _show_context {
+        show_context();
+    }
 }
 
 pub fn show_context() {

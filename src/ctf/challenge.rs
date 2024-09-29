@@ -1,7 +1,8 @@
-use crate::settings;
+use crate::{db::get_ctf_name_from_challenge, settings};
 use std::path::Path;
 use std::fs;
 use crate::db;
+use crate::context;
 use rusqlite::{Connection, params};
 
 pub struct Challenge {
@@ -17,6 +18,20 @@ pub enum ChallengeType {
     Forensics,
     Reversing,
     Misc,
+}
+
+impl ChallengeType {
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "web" => ChallengeType::Web,
+            "pwn" => ChallengeType::Pwn,
+            "crypto" => ChallengeType::Crypto,
+            "forensics" => ChallengeType::Forensics,
+            "reversing" => ChallengeType::Reversing,
+            "misc" => ChallengeType::Misc,
+            _ => ChallengeType::Misc,
+        }
+    }
 }
 
 impl std::fmt::Display for ChallengeType {
@@ -70,12 +85,36 @@ impl Challenge {
             std::process::exit(1);
         }
         let ctf_id = ctf_id.unwrap();
-        if !db::chall_exists(&conn, ctf_name, &self.name) {
+        if db::chall_exists(&conn, ctf_name, &self.name) == 0 {
             conn.execute("INSERT INTO challenge (ctf_id, name, category, flag) VALUES (?1, ?2, ?3, ?4)", params![ctf_id, self.name, self.category.to_string(), self.flag]).unwrap();
         } else {
             // update challenge
             conn.execute("UPDATE challenge SET flag = ?1 WHERE ctf_id = ?2 AND name = ?3", params![self.flag, ctf_id, self.name]).unwrap();
         }
+    }
+
+
+    pub fn edit_chall(&mut self, name: &String, category: &String) {
+        // check if name is unique
+        let conn: Connection = db::get_conn();
+        let ctf_name = get_ctf_name_from_challenge(&conn, self.name.clone()).unwrap();
+        if db::chall_exists(&conn, &ctf_name, &name) > 1 {
+            println!("Challenge with name {} already exists", name);
+            std::process::exit(1);
+        }
+
+        // change file name
+        let workdir = settings::SETTINGS.lock().unwrap().workdir.clone();
+        let old_path = format!("{}/{}/{}/{}", workdir, ctf_name, self.category, self.name);
+        let new_path = format!("{}/{}/{}/{}", workdir, ctf_name, category, name);
+        fs::rename(old_path, &new_path).unwrap();
+
+        // update name in db
+        conn.execute("UPDATE challenge SET name = ?1, category = ?2 WHERE name = ?3", params![name, category, self.name]).unwrap();
+
+        self.name = name.clone();
+        self.category = ChallengeType::from_str(category.as_str());
+        println!("CHANGE_DIR: {}", new_path);
     }
 }
 
@@ -89,4 +128,19 @@ pub fn check_type(chall_type: &str) -> Option<&str> {
         "misc" => Some("misc"),
         _ => None,
     }
+}
+
+pub fn remove_chall(ctf_name: &String, chall_name: &String) {
+    let conn = db::get_conn();
+    let chall_category = db::get_challenge_from_name(&conn, chall_name.to_string()).unwrap().category.to_string();
+
+    db::remove_challenge(&conn, &ctf_name, &chall_name.to_string());
+    context::save_context(Some(&ctf_name), None);
+
+    // remove challenge directory
+    let workdir = settings::SETTINGS.lock().unwrap().workdir.clone();
+    let file_path = format!("{}/{}/{}/{}", workdir, ctf_name, chall_category, chall_name);
+    fs::remove_dir_all(file_path).unwrap();
+    println!("Removed challenge {} from CTF {}", chall_name, ctf_name);
+    // TODO: switch back to ctf context(done)
 }

@@ -38,7 +38,7 @@ pub fn get_conn() -> Connection {
     Connection::open(db_file).unwrap()
 }
 
-pub fn get_ctf_from_name(conn: &Connection, name: String) -> Result<ctf::Ctf> {
+pub fn get_ctf_from_name(conn: &Connection, name: &String) -> Result<ctf::Ctf> {
     let mut stmt = conn.prepare("SELECT path, name, url, creds, start, end FROM ctf WHERE name = ?1")?;
     let ctf_iter = stmt.query_map(params![name], |row| {
         Ok(ctf::Ctf::new(
@@ -145,11 +145,11 @@ pub fn get_all_ctfs(conn: &Connection) -> Result<Vec<ctf::Ctf>> {
     Ok(ctfs)
 }
 
-pub fn chall_exists(conn: &Connection, ctf_name: &String, chall_name: &String) -> bool {
+pub fn chall_exists(conn: &Connection, ctf_name: &String, chall_name: &String) -> i32 {
 
     let mut stmt = conn.prepare("SELECT COUNT(*) FROM challenge WHERE ctf_id = (SELECT id FROM ctf WHERE name = ?1) AND name = ?2").unwrap();
     let count: i32 = stmt.query_row(params![ctf_name, chall_name], |row| row.get(0)).unwrap();
-    count > 0
+    count
 }
 
 pub fn ctf_exists(conn: &Connection, name: &String) -> Option<i32> {
@@ -177,7 +177,8 @@ pub fn count_solved_and_total(conn: &Connection, ctf_name: &String) -> (i32, i32
 }
 
 pub fn remove_ctf(conn: &Connection, name: &String) {
-    // there is no point in removing challenges since the ctf has just been created
+    // remove ctf and all challenges
+    conn.execute("DELETE FROM challenge WHERE ctf_id = (SELECT id FROM ctf WHERE name = ?1)", params![name]).unwrap();
     conn.execute("DELETE FROM ctf WHERE name = ?1", params![name]).unwrap();
 }
 

@@ -74,6 +74,38 @@ impl Ctf {
             }
         }
     }
+
+    pub fn change_name(&mut self, new_name: String) {
+        let conn = db::get_conn();
+        
+        
+        // change directory name
+        let workdir = settings::SETTINGS.lock().unwrap().workdir.clone();
+        let old_path = format!("{}/{}", workdir, self.metadata.name);
+        let new_path = format!("{}/{}", workdir, new_name);
+        fs::rename(old_path, &new_path).unwrap();
+
+        conn.execute("UPDATE ctf SET name = ?1, path = ?2 WHERE name = ?3", params![new_name, new_path, self.metadata.name]).unwrap();
+        
+        self.metadata.name = new_name;
+
+        println!("CHANGE_DIR: {}", new_path);
+    }
+
+    pub fn remove_ctf(&self) {
+        let conn = db::get_conn();
+        let workdir = settings::SETTINGS.lock().unwrap().workdir.clone();
+        let name = &self.metadata.name;
+        // remove ctf from db
+        db::remove_ctf(&conn, name);
+        context::save_context(None, None);
+
+        // remove ctf directory
+        let file_path = workdir + "/" + name;
+        fs::remove_dir_all(file_path).unwrap();
+
+        println!("Removed CTF {}", name);
+    }
 }
 
 pub fn quick_new(name: String) {
@@ -124,7 +156,7 @@ pub fn new_challenge(name: String, category: String) {
 
     let conn = db::get_conn();
     // check if challenge already exists in current CTF
-    if db::chall_exists(&conn, &ctf.metadata.name, &name) {
+    if db::chall_exists(&conn, &ctf.metadata.name, &name) > 0 {
         println!("Challenge already exists in current CTF");
         std::process::exit(1);
     }

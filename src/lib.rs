@@ -6,3 +6,4 @@ pub mod context;
 pub mod undo;
 pub mod autocompletions;
 pub mod help;
+pub mod util;

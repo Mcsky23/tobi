@@ -14,6 +14,12 @@ Command map:
     - `ctf <ctf_name>` - creates a new CTF workspace and switches CTF context to it
     - `<chall_category> <chall_name>` - creates a new challenge workspace and switches context to it
 
+- `tobi edit <chall_category> <chall_name>` - edit the current challenge's category and name 
+    - `ctf <ctf_name>` - edit the current CTF's name
+
+- `tobi rm <ctf_name>` - removes the specified CTF workspace including all challenges
+    - `tobi rm <ctf_name> <chall_name>` - removes the specified challenge workspace
+
 - `tobi list` - list all challenges in the current context
     - `all` - lists all ctfs and all challenges
     - `ctf` - list all ctf names
@@ -78,6 +84,7 @@ Tobi settings(`tobi settings`) feature a TUI interface implemented using [ratatu
 <img src="./demo_img/main_menu1.png" width="100%">
 
 ### TODO:
+- [ ] Add ctf archive functionality
 - [ ] Backup db to some cloud service
 - [ ] Extend undo functionality to more than one action
 - [x] Implement TUI settings menu

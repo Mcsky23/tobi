@@ -3,7 +3,8 @@
 # Define the tobi function
 function tobi() {
     # Run tobi with the arguments passed to this function
-    if [[ $1 == "settings" ]]; then
+    RM_SET=0
+    if [[ $1 == "settings" ]] || [[ $1 == "rm" ]]; then
         # check if I am on macOS or Linux by running uname
         unameOut="$(uname)"
         if [[ $unameOut == "Darwin" ]]; then
@@ -11,10 +12,22 @@ function tobi() {
         else
             script -q -c "tobi-cli $*" /dev/null
         fi
-        return
+        # if [[ $1 == "rm" ]]; then
+        #     # Switch to context directory
+
+        if [[ $1 == "rm" ]]; then
+            RM_SET=1
+        else
+            return
+        fi
     fi
 
-    output=$(tobi-cli "$@")
+    # check if output is empty
+    if [[ $RM_SET -eq 1 ]]; then
+        output=$(tobi-cli "ctf" "NO_UNDO")
+    else
+        output=$(tobi-cli "$@")
+    fi
 
     # Check if the output contains a line starting with "CHANGE_DIR"
     # iterate over each line in output var

@@ -5,6 +5,7 @@
 use std::{fs::File, io::Write};
 use serde::{Serialize, Deserialize};
 use serde_json;
+use crate::ctf::challenge::remove_chall;
 use crate::db;
 use std::fs;
 use crate::context;
@@ -74,13 +75,7 @@ impl UndoAction {
     fn undo_chall_create(&self) {
         let ctf_name = &self.args[0];
         let chall_name = &self.args[1];
-
-        // remove challenge from db
-        let conn = db::get_conn();
-        db::remove_challenge(&conn, ctf_name, chall_name);
-        context::save_context(Some(ctf_name), None);
-
-        println!("Removed challenge {} from CTF {}", chall_name, ctf_name);
+        remove_chall(ctf_name, chall_name);
     }
 
     pub fn new_chall_solve(ctf_name: &String, chall_name: &String) -> Self {
@@ -126,6 +121,40 @@ impl UndoAction {
         context::save_context(Some(ctf_name), Some(chall_name));
         println!("Switched context back to CTF: {} Challenge: {}", ctf_name, chall_name);
     }
+
+    pub fn new_chall_edit(name: &String, category: &String) -> Self {
+        let ctf_name = context::get_context().0.unwrap().metadata.name.clone();
+        UndoAction::new("chall_edit".to_string(), vec![ctf_name, name.clone(), category.clone()])
+    }
+
+    fn undo_chall_edit(&self) {
+        let ctf_name = &self.args[0];
+        let chall_name = &self.args[1];
+        let category = &self.args[2];
+
+        let mut challenge = context::get_context().1.unwrap();
+        challenge.edit_chall(&chall_name, &category);
+        context::switch_context(&ctf_name, Some(&chall_name), false);
+
+        println!("Edited {} -> {} [{}]", ctf_name, chall_name, category);
+    }
+
+    pub fn new_ctf_edit(old_name: &String, new_name: &String) -> Self {
+        UndoAction::new("ctf_edit".to_string(), vec![old_name.clone(), new_name.clone()])
+    }
+
+    fn undo_ctf_edit(&self) {
+        let old_name = &self.args[0];
+        let new_name = &self.args[1];
+        let mut ctf = db::get_ctf_from_name(&db::get_conn(), new_name).unwrap();
+
+        ctf.change_name(old_name.clone());
+        context::switch_context(&ctf.metadata.name, None, false);
+        println!("Restored CTF {}", old_name);
+    }
+
+
+
 }
 
 pub fn undo() {
@@ -139,9 +168,11 @@ pub fn undo() {
     match action.action.as_str() {
         "cd" => action.undo_dir_change(),
         "ctf_new" => action.undo_ctf_create(),
+        "ctf_edit" => action.undo_ctf_edit(),
         "chall_new" => action.undo_chall_create(),
         "chall_solve" => action.undo_chall_solve(),
         "chall_unsolve" => action.undo_chall_unsolve(),
+        "chall_edit" => action.undo_chall_edit(),
         "context_switch" => action.undo_context_switch(),
         _ => {
             println!("Unknown action");

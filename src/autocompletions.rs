@@ -5,6 +5,8 @@ pub fn print_completion(args: Vec<String>) {
         1 => { // tobi commands
             println!("ctf");
             println!("new");
+            println!("edit");
+            println!("rm");
             println!("list");
             println!("context");
             println!("solve");
@@ -14,7 +16,7 @@ pub fn print_completion(args: Vec<String>) {
         },
         2 => {
             match args[1].as_str() {
-                "ctf" | "context" | "list" => {
+                "ctf" | "context" | "list" | "rm" => {
                     // print all ctf names
                     let conn = db::get_conn();
                     let ctfs = db::get_all_ctfs(&conn).unwrap();
@@ -37,11 +39,13 @@ pub fn print_completion(args: Vec<String>) {
         },
         3 => {
             match args[1].as_str() {
-                "ctf" | "context" => {
+                "ctf" | "context" | "rm" => {
                     // print all challenge names from ctf
                     let ctf_name = &args[2];
                     let conn = db::get_conn();
-                    let ctf = db::get_ctf_from_name(&conn, ctf_name.to_string()).unwrap();
+                    let ctf = db::get_ctf_from_name(&conn, &ctf_name).unwrap_or_else(|_| {
+                        std::process::exit(1);
+                    });
                     for chall in ctf.challenges {
                         println!("{}", chall.name);
                     }
