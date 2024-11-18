@@ -3,6 +3,8 @@ use std::fs;
 use rusqlite::{Connection, params};
 use crate::db;
 use crate::context;
+use fs_extra::dir::get_size;
+use humansize::{format_size, DECIMAL};
 
 use crate::db::ctf_exists;
 use crate::settings;
@@ -44,18 +46,25 @@ impl Ctf {
 
     pub fn save_to_db(&self) {
         let conn: Connection = db::get_conn();
-        if let Some(_) = ctf_exists(&conn, &self.metadata.name) {
-            // update ctf
-            conn.execute(
-                "UPDATE ctf SET url = ?1, creds = ?2, start = ?3, end = ?4 WHERE name = ?5",
-                params![self.metadata.url, format!("{}:{}", self.metadata.creds.0, self.metadata.creds.1), self.metadata.start.to_rfc3339(), self.metadata.end.to_rfc3339(), self.metadata.name],
-            ).unwrap();
-        } else {
-            // insert ctf
-            conn.execute(
-                "INSERT INTO ctf (path, name, url, creds, start, end) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                params![self.file_path, self.metadata.name, self.metadata.url, format!("{}:{}", self.metadata.creds.0, self.metadata.creds.1), self.metadata.start.to_rfc3339(), self.metadata.end.to_rfc3339()],
-            ).unwrap();
+        match ctf_exists(&conn, &self.metadata.name) {
+            Ok(_) => {
+                // update ctf
+                conn.execute(
+                    "UPDATE ctf SET url = ?1, creds = ?2, start = ?3, end = ?4 WHERE name = ?5",
+                    params![self.metadata.url, format!("{}:{}", self.metadata.creds.0, self.metadata.creds.1), self.metadata.start.to_rfc3339(), self.metadata.end.to_rfc3339(), self.metadata.name],
+                ).unwrap();
+            },
+            Err(e) => {
+                if e.ends_with("is archived") {
+                    println!("CTF {} is archived. Cannot update", self.metadata.name);
+                    return;
+                } else {
+                    conn.execute(
+                        "INSERT INTO ctf (path, name, url, creds, start, end) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                        params![self.file_path, self.metadata.name, self.metadata.url, format!("{}:{}", self.metadata.creds.0, self.metadata.creds.1), self.metadata.start.to_rfc3339(), self.metadata.end.to_rfc3339()],
+                    ).unwrap();
+                }   
+            }
         }
     }
 
@@ -106,6 +115,96 @@ impl Ctf {
 
         println!("Removed CTF {}", name);
     }
+
+    pub fn zip_ctf_dir(&self) {
+        // zip the ctf directory
+        let workdir = settings::SETTINGS.lock().unwrap().workdir.clone();
+        let name = &self.metadata.name;
+        let ctfdir = format!("{}/{}", workdir, name);
+        let orig_size = get_size(&ctfdir).unwrap();
+        let zip_path = format!("{}/.archived/{}.tar.bz", workdir, name);
+        // if .archived does not exist, create it
+        let archived_dir = format!("{}/.archived", workdir);
+        match fs::create_dir(&archived_dir) {
+            Ok(_) => {},
+            Err(e) => {
+                match e.kind() {
+                    std::io::ErrorKind::AlreadyExists => {},
+                    _ => {
+                        println!("Error creating .archived directory: {}", e);
+                        return;
+                    }
+                }
+            }
+        }
+        // use tar
+        let cmd = format!("tar -cjvf {} -C {} .", zip_path, ctfdir);
+        // println!("[+] Command: {}", cmd);
+        let mut _output = std::process::Command::new("sh")
+            .arg("-c")
+            .arg(&cmd)
+            .spawn()
+            .expect(format!("Failed to execute command: {}", cmd).as_str());
+        
+        _output.wait().unwrap();
+        println!("[+] Command ran successfully");
+        fs::remove_dir_all(ctfdir).unwrap();
+        println!("[+] Removed ctf directory");
+        let new_size = get_size(&zip_path).unwrap();
+        println!("[!] Size reduced from {} to {}", format_size(orig_size, DECIMAL), format_size(new_size, DECIMAL));
+    }
+
+    pub fn unzip_ctf_dir(&self) {
+        // unzip the ctf directory
+        let workdir = settings::SETTINGS.lock().unwrap().workdir.clone();
+        let name = &self.metadata.name;
+        let ctfdir = format!("{}/{}", workdir, name);
+        let zip_path = format!("{}/.archived/{}.tar.bz", workdir, name);
+        let orig_size = get_size(&zip_path).unwrap();
+        // create ctfdir path
+        match fs::create_dir(&ctfdir) {
+            Ok(_) => {},
+            Err(e) => {
+                match e.kind() {
+                    std::io::ErrorKind::AlreadyExists => {},
+                    _ => {
+                        println!("Error creating ctf directory: {}", e);
+                        return;
+                    }
+                }
+            }
+        }
+        // use tar
+        let cmd = format!("tar -xjvf {} -C {}", zip_path, ctfdir);
+        // println!("[+] Running command: {}", cmd);
+        let mut _output = std::process::Command::new("sh")
+            .arg("-c")
+            .arg(&cmd)
+            .spawn()
+            .expect(format!("Failed to execute command: {}", cmd).as_str());
+
+        _output.wait().unwrap();
+        // remove zip file
+        println!("[+] Command ran successfully");
+        fs::remove_file(zip_path).unwrap();
+        println!("[+] Removed zip file");
+        let new_size = get_size(&ctfdir).unwrap();
+        println!("[!] Size inflated from {} to {}", format_size(orig_size, DECIMAL), format_size(new_size, DECIMAL));
+
+    }
+
+    pub fn archive(&self) {
+        self.zip_ctf_dir();
+        let conn = db::get_conn();
+        db::archive_ctf(&conn, &self.metadata.name, true);
+    }
+
+    pub fn unarchive(&self) {
+        self.unzip_ctf_dir();
+        let conn = db::get_conn();
+        db::archive_ctf(&conn, &self.metadata.name, false);
+    }
+
 }
 
 pub fn quick_new(name: String) {

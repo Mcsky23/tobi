@@ -146,7 +146,7 @@ impl UndoAction {
     fn undo_ctf_edit(&self) {
         let old_name = &self.args[0];
         let new_name = &self.args[1];
-        let mut ctf = db::get_ctf_from_name(&db::get_conn(), new_name).unwrap();
+        let mut ctf = db::get_ctf_from_name(&db::get_conn(), new_name, false).unwrap();
 
         ctf.change_name(old_name.clone());
         context::switch_context(&ctf.metadata.name, None, false);

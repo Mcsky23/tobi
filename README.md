@@ -25,6 +25,7 @@ Command map:
     - `ctf` - list all ctf names
     - `<ctf_name>` - lists all challenges in the specified CTF
     - `flags` - lists all the flags in the current challenge workspace
+    - `archived` - lists all archived CTFs
 
 - `tobi context` - prints the current context and a couple stats(Notice similarity to `tobi ctf`. The latter is for changing directories, the former is for changing the context)
     - `<ctf_name/chall_name>` - switches the current context to the specified CTF workspace
@@ -36,6 +37,9 @@ Command map:
 - `tobi undo` - undoes the last action
 
     Note: An example use case for `tobi undo` is checking out some other CTF files. When it's time to go back to the context directory, instead of typing the challenge name, you can simply run this command and it will take you back.
+
+- `tobi archive/unarchive` - archives/unarchives the current CTF workspace
+    - `ctf_name` - archives/unarchive the specified CTF workspace
 
 - `tobi settings` - opens TUI settings menu
 
@@ -84,7 +88,12 @@ Tobi settings(`tobi settings`) feature a TUI interface implemented using [ratatu
 <img src="./demo_img/main_menu1.png" width="100%">
 
 ### TODO:
+- [ ] Add support for removing archived CTF
+- [ ] Add total ocupied space for ctf
+- [ ] Add error handling for ctf archive functionality
 - [ ] Add ctf archive functionality
+- [ ] Complete help menu
+- [ ] Add challenge move functionality
 - [ ] Backup db to some cloud service
 - [ ] Extend undo functionality to more than one action
 - [x] Implement TUI settings menu

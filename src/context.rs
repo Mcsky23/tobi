@@ -23,7 +23,12 @@ pub fn get_context() -> (Option<Ctf>, Option<challenge::Challenge>) {
 
     let mut rez = (None, None);
     if ctf_name.len() > 0 {
-        let ctf = db::get_ctf_from_name(&conn, &ctf_name.to_string()).unwrap();
+        let ctf = db::get_ctf_from_name(&conn, &ctf_name.to_string(), false).unwrap_or_else(|e| {
+            println!("{}. Context file may be corrupted!", e);
+            println!("Resetting context file");
+            save_context(None, None);
+            std::process::exit(1);
+        });
         rez.0 = Some(ctf);
     }
 
@@ -67,7 +72,10 @@ pub fn save_context(ctf_name: Option<&String>, chall_name: Option<&String>) {
 
 pub fn switch_context(ctf_name: &String, chall_name: Option<&String>, _show_context: bool) {
     let conn = db::get_conn();
-    let ctf = db::get_ctf_from_name(&conn, ctf_name);
+    if let Err(e) = db::get_ctf_from_name(&conn, ctf_name, false) {
+        println!("Error: {}", e);
+        return;
+    }
 
     match chall_name {
         Some(chall_name) => {
@@ -78,14 +86,7 @@ pub fn switch_context(ctf_name: &String, chall_name: Option<&String>, _show_cont
         },
         None => {}
     }
-    match ctf {
-        Ok(ctf) => {
-            save_context(Some(&ctf.metadata.name), chall_name);
-        }
-        Err(_) => {
-            println!("CTF not found");
-        }
-    }
+    save_context(Some(ctf_name), chall_name);
     if _show_context {
         show_context();
     }
