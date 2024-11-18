@@ -453,7 +453,7 @@ pub fn do_action(mut args: Vec<String>) {
                             // if pwd is the ctf directory, change to the parent directory
                             let workdir = SETTINGS.lock().unwrap().workdir.clone();
                             let pwd = std::env::current_dir().unwrap();
-                            if pwd == std::path::PathBuf::from(format!("{}/{}", workdir, ctf_name)) {
+                            if pwd.starts_with(std::path::PathBuf::from(format!("{}/{}", workdir, ctf_name))) {
                                 println!("CHANGE_DIR: {}", SETTINGS.lock().unwrap().workdir);
                             }
                             ctf.archive();
