@@ -5,8 +5,10 @@ use crate::db;
 use crate::context;
 use fs_extra::dir::get_size;
 use humansize::{format_size, DECIMAL};
+use colored::Colorize;
 
-use crate::db::ctf_exists;
+use crate::db::{ctf_exists, count_solved_and_total};
+use crate::util::progress_bar;
 use crate::settings;
 
 pub mod challenge;
@@ -73,11 +75,16 @@ impl Ctf {
             println!("No challenges found in {}", self.metadata.name);
             return;
         }
-        println!("{}", self.metadata.name);
+        let workdir = settings::SETTINGS.lock().unwrap().workdir.clone();
+        let ctfdir = format!("{}/{}", workdir, self.metadata.name);
+        let ctf_size = get_size(&ctfdir).unwrap_or(0);
+        let (solved, total) = count_solved_and_total(&crate::db::get_conn(), &self.metadata.name);
+        let progress_bar = progress_bar(solved as usize, total as usize);
+        println!("{}{} - {}\n  {}", "➜".green(), self.metadata.name.bold(), format_size(ctf_size, DECIMAL), progress_bar);
         for challenge in self.challenges.iter() {
-            print!("  {} [{}] {}", if challenge.flag.len() > 0 { "✓" } else { " " }, challenge.category, challenge.name);
+            print!("  {} {}", if challenge.flag.len() > 0 { "✓".bold().blue() } else { " ".bold() }, challenge);
             if with_flags {
-                println!("{} {}", " ".repeat(30 - challenge.name.len()), challenge.flag);
+                println!("{} {}", " ".repeat(40 - challenge.name.len()), challenge.flag);
             } else {
                 println!();
             }
@@ -98,10 +105,10 @@ impl Ctf {
         
         self.metadata.name = new_name;
 
-        println!("CHANGE_DIR: {}", new_path);
+        println!("^CHANGE_DIR^{}^CHANGE_DIR^", new_path);
     }
 
-    pub fn remove_ctf(&self) {
+    pub fn remove_ctf(&self, archived: bool) {
         let conn = db::get_conn();
         let workdir = settings::SETTINGS.lock().unwrap().workdir.clone();
         let name = &self.metadata.name;
@@ -110,10 +117,18 @@ impl Ctf {
         context::save_context(None, None);
 
         // remove ctf directory
-        let file_path = workdir + "/" + name;
-        fs::remove_dir_all(file_path).unwrap();
-
-        println!("Removed CTF {}", name);
+        match archived {
+            false => {
+                let file_path = workdir + "/" + name;
+                fs::remove_dir_all(file_path).unwrap();
+                println!("Removed CTF {}", name);
+            }
+            true => {
+                let file_path = format!("{}/.archived/{}.tar.bz2", workdir, name);
+                fs::remove_file(file_path).unwrap();
+                println!("Removed [archived] CTF {}", name);
+            }
+        }
     }
 
     pub fn zip_ctf_dir(&self) {
@@ -122,7 +137,7 @@ impl Ctf {
         let name = &self.metadata.name;
         let ctfdir = format!("{}/{}", workdir, name);
         let orig_size = get_size(&ctfdir).unwrap();
-        let zip_path = format!("{}/.archived/{}.tar.bz", workdir, name);
+        let zip_path = format!("{}/.archived/{}.tar.bz2", workdir, name);
         // if .archived does not exist, create it
         let archived_dir = format!("{}/.archived", workdir);
         match fs::create_dir(&archived_dir) {
@@ -147,11 +162,11 @@ impl Ctf {
             .expect(format!("Failed to execute command: {}", cmd).as_str());
         
         _output.wait().unwrap();
-        println!("[+] Command ran successfully");
+        println!("{} Command ran successfully", "+".green());
         fs::remove_dir_all(ctfdir).unwrap();
-        println!("[+] Removed ctf directory");
+        println!("{} Removed zip file", "+".green());
         let new_size = get_size(&zip_path).unwrap();
-        println!("[!] Size reduced from {} to {}", format_size(orig_size, DECIMAL), format_size(new_size, DECIMAL));
+        println!("{} Size reduced from {} to {}", "!".bright_red(), format_size(orig_size, DECIMAL), format_size(new_size, DECIMAL));
     }
 
     pub fn unzip_ctf_dir(&self) {
@@ -159,7 +174,7 @@ impl Ctf {
         let workdir = settings::SETTINGS.lock().unwrap().workdir.clone();
         let name = &self.metadata.name;
         let ctfdir = format!("{}/{}", workdir, name);
-        let zip_path = format!("{}/.archived/{}.tar.bz", workdir, name);
+        let zip_path = format!("{}/.archived/{}.tar.bz2", workdir, name);
         let orig_size = get_size(&zip_path).unwrap();
         // create ctfdir path
         match fs::create_dir(&ctfdir) {
@@ -185,11 +200,11 @@ impl Ctf {
 
         _output.wait().unwrap();
         // remove zip file
-        println!("[+] Command ran successfully");
+        println!("{} Command ran successfully", "+".green());
         fs::remove_file(zip_path).unwrap();
-        println!("[+] Removed zip file");
+        println!("{} Removed zip file", "+".green());
         let new_size = get_size(&ctfdir).unwrap();
-        println!("[!] Size inflated from {} to {}", format_size(orig_size, DECIMAL), format_size(new_size, DECIMAL));
+        println!("{} Size inflated from {} to {}", "!".bright_red(), format_size(orig_size, DECIMAL), format_size(new_size, DECIMAL));
 
     }
 
@@ -221,7 +236,7 @@ pub fn quick_new(name: String) {
                     return;
                 }
                 _ => {
-                    println!("Error creating CTF: {}", e);
+                    println!("{}Error creating CTF: {}", "✗".bright_red().bold(), e);
                 }
             }
         }
@@ -234,35 +249,33 @@ pub fn quick_new(name: String) {
 }
 
 pub fn new_challenge(name: String, category: String) {
-    match challenge::check_type(category.as_str()) {
-        Some(chall_type) => {
-            println!("Creating new challenge {} of type {}", name, chall_type);
-        },
-        None => {
-            println!("Invalid challenge type");
-            std::process::exit(1);
-        }
-    };
-
     let (ctf, _) = crate::context::get_context();
     let ctf = match ctf {
         Some(ctf) => ctf,
         None => {
-            println!("You are not working on any CTF");
+            println!("{}You are not working on any CTF", "✗".bright_red().bold());
             std::process::exit(1);
         }
+    };
+
+    match challenge::check_type(category.as_str()) {
+        None => {
+            println!("{}Invalid challenge type", "✗".bright_red().bold());
+            std::process::exit(1);
+        }
+        _ => {}
     };
 
     let conn = db::get_conn();
     // check if challenge already exists in current CTF
     if db::chall_exists(&conn, &ctf.metadata.name, &name) > 0 {
-        println!("Challenge already exists in current CTF");
+        println!("{}Challenge already exists in current CTF", "✗".bright_red().bold());
         std::process::exit(1);
     }
-
+    
     let challenge = challenge::Challenge::new(name, category, "".to_string());
+    println!("Creating new challenge {}", challenge);
     challenge.create_file(&ctf.metadata.name);
-
     challenge.save_to_db(&ctf.metadata.name);
 
     context::save_context(Some(&ctf.metadata.name), Some(&challenge.name));

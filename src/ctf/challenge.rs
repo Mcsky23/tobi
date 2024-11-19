@@ -4,6 +4,7 @@ use crate::{db::get_ctf_name_from_challenge, settings};
 use rusqlite::{params, Connection};
 use std::fs;
 use std::path::Path;
+use colored::Colorize;
 
 pub struct Challenge {
     pub name: String,
@@ -38,12 +39,31 @@ impl std::fmt::Display for ChallengeType {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             ChallengeType::Web => write!(f, "web"),
-            ChallengeType::Pwn => write!(f, "pwn"),
+            ChallengeType::Pwn => write!(f, "{}", "pwn"),
             ChallengeType::Crypto => write!(f, "crypto"),
             ChallengeType::Forensics => write!(f, "forensics"),
             ChallengeType::Reversing => write!(f, "reversing"),
             ChallengeType::Misc => write!(f, "misc"),
         }
+    }
+}
+
+impl ChallengeType {
+    pub fn pretty_print(&self) -> String {
+        match self {
+            ChallengeType::Web => format!("{}", "web".cyan()),
+            ChallengeType::Pwn => format!("{}", "pwn".purple()),
+            ChallengeType::Crypto => format!("{}", "crypto".yellow()),
+            ChallengeType::Forensics => format!("{}", "forensics".blue()),
+            ChallengeType::Reversing => format!("{}", "reversing".green()),
+            ChallengeType::Misc => format!("{}", "misc".magenta()),
+        }
+    }
+}
+
+impl std::fmt::Display for Challenge {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{} {}", self.category.pretty_print(), self.name.italic())
     }
 }
 
@@ -109,7 +129,10 @@ impl Challenge {
         if !Path::new(&format!("{}/{}/{}", workdir, ctf_name, category)).exists() {
             fs::create_dir(&format!("{}/{}/{}", workdir, ctf_name, category)).unwrap();
         }
-
+        if !(Path::new(&old_path).exists()) {
+            println!("{}Challenge directory does not exist", "✗".bright_red().bold());
+            std::process::exit(1);
+        }
         fs::rename(old_path, &new_path).unwrap();
         new_path
     }
@@ -134,7 +157,7 @@ impl Challenge {
 
         self.name = name.clone();
         self.category = ChallengeType::from_str(category.as_str());
-        println!("CHANGE_DIR: {}", new_path);
+        println!("^CHANGE_DIR^{}^CHANGE_DIR^", new_path);
     }
 }
 

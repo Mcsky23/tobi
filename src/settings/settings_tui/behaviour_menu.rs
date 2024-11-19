@@ -59,11 +59,19 @@ impl Default for Menu {
         let tobi_behaviour_ops = vec!["ctf", "context", "list", "solve", "unsolve"];
         let tobi_behaviour_selected = tobi_behaviour_ops.iter().position(|x| x == &aux.tobi_command).unwrap_or(0);
         
+        let context_behaviour_ops = vec!["yes", "no"];
+        let context_behaviour_selected = context_behaviour_ops.iter().position(|x| x == match &aux.context_changes_dir {
+            true => &"yes",
+            false => &"no",
+        }).unwrap_or(0);
         Self {
             items: vec![
             MenuItem::new("`tobi` command should be an alias for ", 
             tobi_behaviour_ops.iter().map(|x| x.to_string()).collect(),
             tobi_behaviour_selected), 
+            MenuItem::new("`tobi context` also changes directory",
+            context_behaviour_ops.iter().map(|x| x.to_string()).collect(),
+            context_behaviour_selected),
             ],
             state: state,
             should_exit: false,
@@ -107,6 +115,33 @@ impl AppMenuTrait for Menu {
                         };
                         item.selected = new_selected;
                         aux.tobi_command = item.options[new_selected].clone();
+                    },
+                    1 => {
+                        let item = &mut self.items[selected];
+                        let selected = item.selected;
+                        let new_selected = match event.code {
+                            KeyCode::Right => {
+                                if selected == item.options.len() - 1 {
+                                    0
+                                } else {
+                                    selected + 1
+                                }
+                            },
+                            KeyCode::Left => {
+                                if selected == 0 {
+                                    item.options.len() - 1
+                                } else {
+                                    selected - 1
+                                }
+                            },
+                            _ => selected,
+                        };
+                        item.selected = new_selected;
+                        aux.context_changes_dir = match item.options[new_selected].as_str() {
+                            "yes" => true,
+                            "no" => false,
+                            _ => false,
+                        };
                     },
                     _ => {}
                 }

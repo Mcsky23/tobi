@@ -3,6 +3,7 @@ use tobi::commands;
 use tobi::settings;
 
 fn main() {
+    let args = std::env::args().collect::<Vec<String>>();
     match settings::load_settings_from_file() {
         Ok(_) => { 
             match db::init_db() {
@@ -14,14 +15,14 @@ fn main() {
             }
         },
         Err(_) => {
-            println!("Settings file not found. Opening settings menu...");
-            // sleep to let the user read the message
-            std::thread::sleep(std::time::Duration::from_secs(3));
-            settings::show_settings_menu().unwrap();
-            std::process::exit(1);
+            if args.len() == 2 && args[1] == "settings"  {
+                settings::show_settings_menu().unwrap();
+                std::process::exit(0);
+            } else {
+                println!("tobi is not configured. Please run `tobi settings` to setup CTFs dir, db and context file paths.");
+                std::process::exit(1);
+            }
         }
     }
-
-    let args = std::env::args().collect::<Vec<String>>();
     commands::do_action(args);
 }

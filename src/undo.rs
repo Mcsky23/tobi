@@ -10,6 +10,7 @@ use crate::db;
 use std::fs;
 use crate::context;
 use crate::settings;
+use colored::Colorize;
 
 #[derive(Serialize, Deserialize)]
 pub struct UndoAction {
@@ -44,7 +45,7 @@ impl UndoAction {
 
     fn undo_dir_change(&self) {
         let new_dir = &self.args[0];
-        println!("CHANGE_DIR: {}", new_dir);
+        println!("^CHANGE_DIR^{}^CHANGE_DIR^", new_dir);
 
         println!("Changed dir back to {}", new_dir);
     }
@@ -136,7 +137,7 @@ impl UndoAction {
         challenge.edit_chall(&chall_name, &category);
         context::switch_context(&ctf_name, Some(&chall_name), false);
 
-        println!("Edited {} -> {} [{}]", ctf_name, chall_name, category);
+        println!("Edited {} {} {}", ctf_name, "➜".green(), challenge);
     }
 
     pub fn new_ctf_edit(old_name: &String, new_name: &String) -> Self {

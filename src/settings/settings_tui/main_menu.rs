@@ -56,6 +56,7 @@ impl Default for Menu {
                 MenuItem::new("Path Settings", "Change default path for CTFs, db, etc."),
                 MenuItem::new("Behavior Settings", "Customize tobi behavior to your liking"),
                 MenuItem::new("Info", "Info about tobi"),
+                MenuItem::new("Reset", "Reset tobi settings(NOT reversible)"),
             ],
             state: state,
             should_exit: false,
@@ -83,6 +84,12 @@ impl AppMenuTrait for Menu {
                         // open behaviour menu
                         return Ok(Some(3))
                     },
+                    Some(3) => {
+                        // reset settings
+                        crate::settings::reset_settings();
+                        crate::settings::save_settings_to_file().unwrap();
+                        self.should_exit = true;
+                    }
                     _ => {}
                 }
             },

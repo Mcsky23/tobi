@@ -4,6 +4,8 @@ use std::path::Path;
 
 use crate::ctf::{challenge, Ctf};
 use crate::db;
+use crate::util::progress_bar;
+use colored::Colorize;
 
 use crate::settings;
 
@@ -98,15 +100,15 @@ pub fn show_context() {
         Some(ctf) => {
             match chall {
                 Some(chall) => {
-                    println!("Currently working on {} -> {} [{}]", ctf.metadata.name, chall.name, chall.category);
+                    println!("Currently working on {} {} {}", ctf.metadata.name.bold(), "➜".green(), chall);
                 },
                 None => {
-                    println!("Currently working on {}", ctf.metadata.name);
+                    println!("Currently working on {}", ctf.metadata.name.bold());
                 }
             };
             let conn = db::get_conn();
             let (solved, total) = db::count_solved_and_total(&conn, &ctf.metadata.name);
-            println!("Solved {}/{}", solved, total);
+            println!("Solved {}/{} {}", solved, total, progress_bar(solved as usize, total as usize));
         },
         None => {
             println!("Currently working on nothing.");
@@ -130,7 +132,7 @@ pub fn change_directory() {
                         println!("Challenge directory not found.") // this code should never be reached based on other checks
                     } else {
                         // run system command to change directory
-                        println!("CHANGE_DIR: {}", chall_dir);
+                        println!("^CHANGE_DIR^{}^CHANGE_DIR^", chall_dir);
                     }
                 },
                 None => {
@@ -140,13 +142,13 @@ pub fn change_directory() {
                         println!("CTF directory not found.") // this code should never be reached based on other checks
                     } else {
                         // change directory by outputting the path and using a shell script
-                        println!("CHANGE_DIR: {}", ctf_dir);
+                        println!("^CHANGE_DIR^{}^CHANGE_DIR^", ctf_dir);
                     }
                 }
             }
         },
         None => {
-            println!("No context found. Create a new CTF or start working on an existing one.");
+            println!("No context found.");
         }
     }
 }

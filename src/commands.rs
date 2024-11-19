@@ -9,6 +9,7 @@ use crate::help;
 use crate::settings::{self, SETTINGS};
 use crate::undo::{undo, UndoAction};
 use crate::util::are_you_sure;
+use colored::Colorize;
 
 trait ArgName<T> {
     fn validate(&self) -> &T;
@@ -20,7 +21,7 @@ impl ArgName<String> for String {
         if self.chars().all(|c| c.is_alphanumeric() || c == '_') {
             return &self;
         }
-        println!("Invalid name in argument: {}", self);
+        println!("{}Invalid name in argument: {}", "✗".bright_red().bold() ,self);
         std::process::exit(1);
     }
 }
@@ -55,7 +56,7 @@ pub fn do_action(mut args: Vec<String>) {
                     match db::get_ctf_from_name(&conn, &ctf_name, false) {
                         Ok(ctf) => {
                             UndoAction::new_dir_change().log_action();
-                            println!("CHANGE_DIR: {}", ctf.file_path);
+                            println!("^CHANGE_DIR^{}^CHANGE_DIR^", ctf.file_path);
                         }
                         Err(e) => {
                             println!("{}", e);
@@ -73,7 +74,7 @@ pub fn do_action(mut args: Vec<String>) {
                             match db::get_challenge_from_name(&conn, chall_name.to_string()) {
                                 Ok(chall) => {
                                     UndoAction::new_dir_change().log_action();
-                                    println!("CHANGE_DIR: {}/{}", ctf.file_path, chall.category);
+                                    println!("^CHANGE_DIR^{}/{}^CHANGE_DIR^", ctf.file_path, chall.category);
                                 }
                                 Err(_) => {
                                     println!("Challenge not found");
@@ -86,7 +87,7 @@ pub fn do_action(mut args: Vec<String>) {
                     }
                 }
                 _ => {
-                    println!("Invalid number of arguments");
+                    println!("{}Invalid number of arguments", "✗".bright_red().bold());
                     println!("Usage: tobi ctf - change to CTF directory");
                 }
             }
@@ -96,7 +97,7 @@ pub fn do_action(mut args: Vec<String>) {
             match what {
                 "ctf" => {
                     if args.len() != 4 {
-                        println!("Invalid number of arguments");
+                        println!("{}Invalid number of arguments", "✗".bright_red().bold());
                         println!("Usage: tobi new ctf <name> - create a new ctf");
                     }
                     let name = args[3].validate();
@@ -105,10 +106,14 @@ pub fn do_action(mut args: Vec<String>) {
                 }
                 chall_type => {
                     if args.len() != 4 {
-                        println!("Invalid number of arguments");
+                        println!("{}Invalid number of arguments", "✗".bright_red().bold());
                         println!("Usage: tobi new <type> <name> - create a new challenge");
                     }
                     let name = args[3].validate();
+                    if let Ok(true) = is_ctf_archived(&db::get_conn(), &name) {
+                        println!("{}Cannot create challenge in [archived] {}", "✗".bright_red().bold(), name);
+                        std::process::exit(1);
+                    }
                     ctf::new_challenge(name.to_string(), chall_type.to_string());
                     UndoAction::new_chall_create(&name).log_action(); // no need to error check here, if there is no ctf in scope program exits anyways
                 }
@@ -124,7 +129,7 @@ pub fn do_action(mut args: Vec<String>) {
                     if category == "ctf" {
                         // edit ctf name
                         if let None = ctf {
-                            println!("No CTF found in context");
+                            println!("{}No CTF found in context","✗".bright_red().bold());
                             std::process::exit(1);
                         }
                         let mut ctf = ctf.unwrap();
@@ -133,17 +138,17 @@ pub fn do_action(mut args: Vec<String>) {
 
                         ctf.change_name(name.clone());
                         context::switch_context(&ctf.metadata.name, None, false);
-                        println!("Edited CTF {}", &ctf.metadata.name);
+                        println!("Edited CTF {}", &ctf.metadata.name.bold());
                     } else {
                         if let None = chall {
-                            println!("No challenge found in context");
+                            println!("{}No challenge found in context", "✗".bright_red().bold());
                             std::process::exit(1);
                         }
 
                         let mut chall = chall.unwrap();
                         let ctf = ctf.unwrap();
                         if challenge::check_type(&category).is_none() {
-                            println!("Invalid challenge type");
+                            println!("{}Invalid challenge type", "✗".bright_red().bold());
                             std::process::exit(1);
                         }
 
@@ -154,14 +159,15 @@ pub fn do_action(mut args: Vec<String>) {
                         context::switch_context(&ctf.metadata.name, Some(&name), false);
 
                         println!(
-                            "Edited {} -> {} [{}]",
-                            &ctf.metadata.name, &chall.name, &chall.category
+                            "Edited {} {} {}",
+                            &ctf.metadata.name.bold(), "➜".green().bold(), &chall
                         );
                     }
                 }
                 _ => {
-                    println!("Invalid number of arguments");
+                    println!("{}Invalid number of arguments", "✗".bright_red().bold());
                     println!("Usage: tobi edit <category> <name>");
+                    println!("       tobi edit ctf <name>");
                 }
             }
         }
@@ -172,7 +178,7 @@ pub fn do_action(mut args: Vec<String>) {
                     // list all challenges in current ctf
                     let (ctf, _) = context::get_context();
                     if let None = ctf {
-                        println!("No CTF found in context");
+                        println!("{}No CTF found in context", "✗".bright_red().bold() ,);
                         std::process::exit(1);
                     }
                     let ctf = ctf.unwrap();
@@ -195,7 +201,7 @@ pub fn do_action(mut args: Vec<String>) {
                             if ctfs.len() > 0 {
                                 println!();
                                 for ctf in ctfs {
-                                    println!("[ARCHIVED] {}", ctf.metadata.name);
+                                    println!("{}{} {}", "✗".bright_red(), "[ARCHIVED]".white(), ctf.metadata.name);
                                 }
                                 println!();
                             }
@@ -215,7 +221,7 @@ pub fn do_action(mut args: Vec<String>) {
                             // list all challenges with flags
                             let (ctf, _) = context::get_context();
                             if let None = ctf {
-                                println!("No CTF found in context");
+                                println!("{}No CTF found in context", "✗".bright_red().bold());
                                 std::process::exit(1);
                             }
                             let ctf = ctf.unwrap();
@@ -253,7 +259,7 @@ pub fn do_action(mut args: Vec<String>) {
                     }
                 }
                 _ => {
-                    println!("Invalid number of arguments");
+                    println!("{}Invalid number of arguments", "✗".bright_red().bold());
                     println!("Usage: tobi list - list all ctfs");
                     println!("       tobi list <ctf> - list all challenges in ctf");
                 }
@@ -269,21 +275,27 @@ pub fn do_action(mut args: Vec<String>) {
                     match are_you_sure(anon_name) {
                         true => {}
                         false => {
-                            println!("Canceled");
+                            println!("{}Canceled", "✗".bright_red().bold());
                             std::process::exit(1);
                         }
                     }
 
                     if let Ok(ctf) = db::get_ctf_from_name(&conn, &anon_name, false) {
                         // remove ctf
-                        ctf.remove_ctf();
+                        ctf.remove_ctf(false);
+                    } else if let Ok(ctf) = db::get_ctf_from_name(&conn, &anon_name, true) {
+                        ctf.remove_ctf(true);
                     } else if db::get_challenge_from_name(&conn, anon_name.to_string()).is_ok() {
                         let ctf_name =
                             db::get_ctf_name_from_challenge(&conn, anon_name.to_string())
                                 .unwrap_or_else(|e| {
-                                    println!("{}", e);
+                                    println!("{}{}", "✗".bright_red().bold(), e);
                                     std::process::exit(1);
                                 });
+                        if let Ok(true) = is_ctf_archived(&conn, &ctf_name) {
+                            println!("{}Cannot remove challenge {} from [archived] {}", "✗".bright_red().bold() , anon_name, ctf_name);
+                            std::process::exit(1);
+                        }
                         remove_chall(&ctf_name, anon_name);
                     } else {
                         println!("No ctf or challenge found with name {}", anon_name);
@@ -297,7 +309,7 @@ pub fn do_action(mut args: Vec<String>) {
                     match are_you_sure(chall_name) {
                         true => {}
                         false => {
-                            println!("Canceled");
+                            println!("{}Canceled", "✗".bright_red().bold());
                             std::process::exit(1);
                         }
                     }
@@ -305,9 +317,9 @@ pub fn do_action(mut args: Vec<String>) {
                     remove_chall(ctf_name, chall_name);
                 }
                 _ => {
-                    println!("Invalid number of arguments");
-                    println!("Usage: tobi rm <ctf> - remove ctf");
-                    println!("       tobi rm <ctf> <challenge> - remove challenge");
+                    println!("{}Invalid number of arguments", "✗".bright_red().bold());
+                    println!("Usage: tobi rm <ctf/challenge> - remove ctf or challenge");
+                    println!("       tobi rm <ctf> <challenge> - remove challenge from ctf");
                 }
             }
         }
@@ -315,12 +327,12 @@ pub fn do_action(mut args: Vec<String>) {
             // solve the current challenge
             let (ctf, challenge) = context::get_context();
             if let None = ctf {
-                println!("No CTF found in context");
+                println!("{}No CTF found in context", "✗".bright_red().bold());
                 std::process::exit(1);
             }
             let ctf = ctf.unwrap();
             if args.len() != 3 {
-                println!("Invalid number of arguments");
+                println!("{}Invalid number of arguments", "✗".bright_red().bold());
                 println!("Usage: tobi solve <flag>");
                 std::process::exit(1);
             }
@@ -333,12 +345,12 @@ pub fn do_action(mut args: Vec<String>) {
                     challenge.save_to_db(&ctf.metadata.name);
                     UndoAction::new_chall_solve(&ctf.metadata.name, &challenge.name).log_action();
                     println!(
-                        "Solved {} -> {} [{}]: {}",
-                        &ctf.metadata.name, &challenge.name, &challenge.category, &challenge.flag
+                        "Solved {} {} {}: {}",
+                        &ctf.metadata.name, "➜".green(), &challenge, &challenge.flag
                     );
                 }
                 None => {
-                    println!("You are currently not working on a challenge");
+                    println!("{}You are currently not working on a challenge", "✗".bright_red().bold());
                     std::process::exit(1);
                 }
             }
@@ -348,12 +360,12 @@ pub fn do_action(mut args: Vec<String>) {
             // solve the current challenge
             let (ctf, challenge) = context::get_context();
             if let None = ctf {
-                println!("No CTF found in context");
+                println!("{}No CTF found in context", "✗".bright_red().bold());
                 std::process::exit(1);
             }
             let ctf = ctf.unwrap();
             if args.len() != 2 {
-                println!("Invalid number of arguments");
+                println!("{}Invalid number of arguments", "✗".bright_red().bold());
                 println!("Usage: tobi solve <flag>");
                 std::process::exit(1);
             }
@@ -369,12 +381,12 @@ pub fn do_action(mut args: Vec<String>) {
                     challenge.flag = "".to_string();
                     challenge.save_to_db(&ctf.metadata.name);
                     println!(
-                        "Unsolved {} -> {} [{}]",
-                        &ctf.metadata.name, &challenge.name, &challenge.category
+                        "Unsolved {} {} {}",
+                        &ctf.metadata.name, "➜".green(), &challenge
                     );
                 }
                 None => {
-                    println!("You are currently not working on a challenge");
+                    println!("{}You are currently not working on a challenge", "✗".bright_red().bold());
                     std::process::exit(1);
                 }
             }
@@ -389,19 +401,31 @@ pub fn do_action(mut args: Vec<String>) {
                     // set context
                     let anon_name = args[2].validate();
                     let conn = db::get_conn();
+                    if let Ok(true) = is_ctf_archived(&conn, &anon_name) {
+                        println!("{}Cannot switch context to [archived] {}", "✗".bright_red().bold(), anon_name);
+                        std::process::exit(1);
+                    }
+                    let context_changes_dir = SETTINGS.lock().unwrap().context_changes_dir;
+    
                     // figure if this is a ctf or a challenge by searching through db
                     if db::get_ctf_from_name(&conn, &anon_name, false).is_ok() {
                         context::switch_context(anon_name, None, true);
+                        if context_changes_dir {
+                            context::change_directory();
+                        }
                     } else if db::get_challenge_from_name(&conn, anon_name.to_string()).is_ok() {
                         // get ctf name from challenge
                         let ctf_name =
                             db::get_ctf_name_from_challenge(&conn, anon_name.to_string()).unwrap();
 
                         context::switch_context(&ctf_name, Some(anon_name), true);
+                        if context_changes_dir {
+                            context::change_directory();
+                        }
                         UndoAction::new_context_switch(&ctf_name, Some(&anon_name)).log_action();
                     } else {
                         println!(
-                            "No ctf or challenge found with name {} or it is archived",
+                            "No ctf or challenge found with name {}",
                             anon_name
                         );
                     }
@@ -410,11 +434,15 @@ pub fn do_action(mut args: Vec<String>) {
                     // set context
                     let ctf_name = args[2].validate();
                     let chall_name = args[3].validate();
+                    if let Ok(true) = is_ctf_archived(&db::get_conn(), &ctf_name) {
+                        println!("{}Cannot switch context to [archived] {}", "✗".bright_red().bold(), ctf_name);
+                        std::process::exit(1);
+                    }
                     context::switch_context(ctf_name, Some(chall_name), true);
                     UndoAction::new_context_switch(ctf_name, Some(chall_name)).log_action();
                 }
                 _ => {
-                    println!("Invalid number of arguments");
+                    println!("{}Invalid number of arguments", "✗".bright_red().bold());
                     println!("Usage: tobi context - show current context");
                     println!("       tobi context <ctf> <challenge> - set current context");
                 }
@@ -426,7 +454,7 @@ pub fn do_action(mut args: Vec<String>) {
                     // archive current ctf context
                     let (ctf, _) = context::get_context();
                     if let None = ctf {
-                        println!("No CTF found in context");
+                        println!("{}No CTF found in context", "✗".bright_red().bold());
                         std::process::exit(1);
                     }
                     let ctf = ctf.unwrap();
@@ -437,7 +465,7 @@ pub fn do_action(mut args: Vec<String>) {
                     }
                     ctf.archive();
                     context::save_context(None, None); // TODO figure bugs here
-                    println!("CHANGE_DIR: {}", SETTINGS.lock().unwrap().workdir);
+                    println!("^CHANGE_DIR^{}^CHANGE_DIR^", SETTINGS.lock().unwrap().workdir);
                     println!("Archived {}\nSwitching to CTFs path", ctf.metadata.name);
                 }
                 3 => {
@@ -446,7 +474,7 @@ pub fn do_action(mut args: Vec<String>) {
                     match is_ctf_archived(&conn, &ctf_name) {
                         Ok(a) => {
                             if a == true {
-                                println!("CTF already archived");
+                                println!("{}CTF already archived", "✗".bright_red().bold());
                                 std::process::exit(1);
                             }
                             let ctf = db::get_ctf_from_name(&conn, &ctf_name, false).unwrap();
@@ -454,19 +482,19 @@ pub fn do_action(mut args: Vec<String>) {
                             let workdir = SETTINGS.lock().unwrap().workdir.clone();
                             let pwd = std::env::current_dir().unwrap();
                             if pwd.starts_with(std::path::PathBuf::from(format!("{}/{}", workdir, ctf_name))) {
-                                println!("CHANGE_DIR: {}", SETTINGS.lock().unwrap().workdir);
+                                println!("^CHANGE_DIR^{}^CHANGE_DIR^", SETTINGS.lock().unwrap().workdir);
                             }
                             ctf.archive();
                             println!("Archived {}\nSwitching to CTFs path", ctf_name);
                         }
                         Err(_) => {
-                            println!("CTF not found");
+                            println!("{}CTF not found", "✗".bright_red().bold());
                             std::process::exit(1);
                         }
                     }
                 }
                 _ => {
-                    println!("Invalid number of arguments");
+                    println!("{}Invalid number of arguments", "✗".bright_red().bold());
                     println!("Usage: tobi archive - archive current ctf workspace");
                     println!("       tobi archive <ctf> - archive ctf workspace");
                 }
@@ -484,42 +512,52 @@ pub fn do_action(mut args: Vec<String>) {
                                 ctf.unarchive();
                                 println!("Unarchived {}", ctf_name);
                             } else {
-                                println!("CTF not archived");
+                                println!("{}CTF not archived", "✗".bright_red().bold());
                                 std::process::exit(1);
                             }
                         }
                         Err(_) => {
-                            println!("CTF not found");
+                            println!("{}CTF not found", "✗".bright_red().bold());
                             std::process::exit(1);
                         }
                     }
                 }
                 _ => {
-                    println!("Invalid number of arguments");
+                    println!("{}Invalid number of arguments", "✗".bright_red().bold());
                     println!("       tobi unarchive <ctf> - unarchive ctf workspace");
                 }
             }
         }
         "move" => {
-            if args.len() != 4 {
-                println!("Invalid number of arguments");
-                println!("Usage: tobi move <challenge> <ctf>");
-                std::process::exit(1);
-            }
-            let (ctf, chall) = context::get_context();
-            if let None = ctf {
-                println!("No CTF found in context");
-                std::process::exit(1);
-            }
-            if let None = chall {
-                println!("No challenge found in context");
-                std::process::exit(1);
-            }
+            println!("{}Not implemented yet", "✗".bright_red().bold());
+            std::process::exit(1);
+            // if args.len() != 4 {
+            //     println!("{}Invalid number of arguments", "✗".bright_red().bold());
+            //     println!("Usage: tobi move <challenge> <ctf>");
+            //     std::process::exit(1);
+            // }
+            // let new_ctf_name = args[3].validate();
+            // if let Ok(true) = is_ctf_archived(&db::get_conn(), &new_ctf_name) {
+            //     println!("{}Cannot move challenge to [archived] {}", "✗".bright_red().bold(), new_ctf_name);
+            //     std::process::exit(1);
+            // } else if db::get_ctf_from_name(&db::get_conn(), &new_ctf_name, false).is_err() {
+            //     println!("{}CTF not found", "✗".bright_red().bold());
+            //     std::process::exit(1);
+            // }
+
+            // let (ctf, chall) = context::get_context();
+            // if let None = ctf {
+            //     println!("{}No CTF found in context", "✗".bright_red().bold());
+            //     std::process::exit(1);
+            // }
+            // if let None = chall {
+            //     println!("{}No challenge found in context", "✗".bright_red().bold());
+            //     std::process::exit(1);
+            // }
             // let ctf = ctf.unwrap();
             // let chall = chall.unwrap();
-            // let new_ctf_name = args[3].validate();
             // let conn = db::get_conn();
-            todo!();
+            // db::move_challenge(&conn, &ctf.metadata.name, &chall.name, &new_ctf_name);
         }
         "undo" => {
             // undo the last action

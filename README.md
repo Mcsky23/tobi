@@ -39,7 +39,7 @@ Command map:
     Note: An example use case for `tobi undo` is checking out some other CTF files. When it's time to go back to the context directory, instead of typing the challenge name, you can simply run this command and it will take you back.
 
 - `tobi archive/unarchive` - archives/unarchives the current CTF workspace
-    - `ctf_name` - archives/unarchive the specified CTF workspace
+    - `<ctf_name>` - archives/unarchive the specified CTF workspace
 
 - `tobi settings` - opens TUI settings menu
 
@@ -87,18 +87,9 @@ Tobi settings(`tobi settings`) feature a TUI interface implemented using [ratatu
 
 <img src="./demo_img/main_menu1.png" width="100%">
 
-### TODO:
-- [ ] Add support for removing archived CTF
-- [ ] Add total ocupied space for ctf
-- [ ] Add error handling for ctf archive functionality
-- [ ] Add ctf archive functionality
-- [ ] Complete help menu
+### Planned updates
 - [ ] Add challenge move functionality
 - [ ] Backup db to some cloud service
 - [ ] Extend undo functionality to more than one action
-- [x] Implement TUI settings menu
-- [ ] Create custom scripts for a workspace or for all workspaces
 - [ ] Remote pwn environment integration
-- [ ] Beautify prints
-- [x] Make `tobi` command customizable
 - [ ] Add setting to automatically switch directory when switching context
