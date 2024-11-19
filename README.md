@@ -1,7 +1,10 @@
 # TOBI
 
+**News**: **tobi** is rapidly approaching it's first release! Expect a stable version in the upcoming days followed by an introduction blog post!
+
 Tobi is a CLI tool designed to help with organizing and managing CTF challenge workspaces.
 
+## Documentation
 Command map:
 - `tobi` by itself will be aliased to `tobi ctf` (this can be changed in the settings menu)
 - `tobi ctf` - change dir to the current CTF workspace(if no chall is in scope, it will change to the CTF base dir)
@@ -63,10 +66,12 @@ To install `tobi`:
 ./install.sh --uninstall
 ```
 
+**Warning**: For now, `tobi` has only been tested on `macOS` and `Ubuntu`. If you encounter any problems on other systems, please open an issue.
+
 ### Info
 
 When installing, the script will:
-- compile the binary using `cargo`
+- compile the binary using `cargo build --release`
 - copy the binary and the wrapper script to the specified directory
 - add `source <install_dir>/tobirc.sh` to your shell's rc file
 
