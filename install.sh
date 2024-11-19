@@ -116,3 +116,4 @@ else
     echo "source $INSTALL_DIR/tobirc.sh" >> $RC_FILE
 fi
 echo "[+] Done! Make sure to restart your shell to apply the changes"
+echo "[!] NOTE: Add your install-dir to your PATH variable if it's not already added"

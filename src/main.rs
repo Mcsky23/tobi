@@ -4,6 +4,10 @@ use tobi::settings;
 
 fn main() {
     let args = std::env::args().collect::<Vec<String>>();
+    if args.len() == 2 && (args[1] == "help" || args[1] == "_autocomplete") {
+        commands::do_action(args);
+        std::process::exit(0);
+    }
     match settings::load_settings_from_file() {
         Ok(_) => { 
             match db::init_db() {
