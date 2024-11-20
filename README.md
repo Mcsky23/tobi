@@ -77,10 +77,11 @@ When installing, the script will:
 
 ## Inner workings
 
-`tobi` uses a sqlite database to store information about the CTFs and challenges. For proper functionality, it relies on 3 files that are created on your system:
+`tobi` uses a sqlite database to store information about the CTFs and challenges. For proper functionality, it relies on a couple files that are created on your system:
 - `DB_PATH/tobi.db` - the sqlite database
 - `CONTEXT_PATH/.tobicntxt` - the file that remembers the current context so that you can easily switch back to it
 - `/tmp/tobi` - a temporary file containing the last action so that you can undo it
+- `~/.tobi` - the settings file
 
 Because changing the shell's directory from a running child process is not possible, `tobi` uses a wrapper bash script. This declares a helper function that ingests `tobi-cli`(the actual binary) output and changes the directory if needed. `tobi` wrapper is sourced in the shell's rc file.
 
