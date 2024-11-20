@@ -566,6 +566,9 @@ pub fn do_action(mut args: Vec<String>) {
         "settings" => {
             settings::show_settings_menu().unwrap();
         }
+        "info" => {
+            help::print_info();
+        }
         "_autocomplete" => {
             // autocomplete for shell
             let prog_args = args[2..].join(" ");

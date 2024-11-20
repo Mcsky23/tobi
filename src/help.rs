@@ -1,3 +1,7 @@
+use crate::settings;
+use fs_extra::dir::get_size;
+use humansize::{format_size, DECIMAL};
+
 pub fn print_help() {
     println!(r#"tobi v1.0.0
 
@@ -44,4 +48,10 @@ Options:
 
     settings                    open the settings TUI menu
     "#);
+}
+
+pub fn print_info() {
+    let ctf_size = get_size(settings::SETTINGS.lock().unwrap().workdir.clone()).unwrap();
+    println!(r#"tobi v1.0.0
+    Total size of CTF dir: {}"#, format_size(ctf_size, DECIMAL).to_string());
 }
