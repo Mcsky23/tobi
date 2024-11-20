@@ -1,6 +1,6 @@
 # TOBI
 
-**News**: **tobi** is rapidly approaching it's first release! Expect a stable version in the upcoming days followed by an introduction blog post!
+**News**: **tobi** v1.0.0 is now available! Blog post [here](https://blog.mcsky.ro/news/2024/11/20/tobi-release.html)
 
 Tobi is a CLI tool designed to help with organizing and managing CTF challenge workspaces.
 
